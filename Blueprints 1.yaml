@@ -20,13 +20,13 @@ blueprint:
             - semaine
             - week-end
     thermometres_intérieur:
-      name: Capteurs de température (Intérieur)
+      name: Capteur de température (Intérieur)
       description: Capteur utilisé pour mesurer la température intérieure.
       selector:
         entity:
           domain: sensor
     thermometres_exterieur:
-      name: Capteurs de température (Extérieur)
+      name: Capteur de température (Extérieur)
       description: Capteur utilisé pour mesurer la température extérieure.
       selector:
         entity:
@@ -92,7 +92,7 @@ blueprint:
       description: Température maximale cible lors du mode préservation.
       selector:
         number:
-          min: 24
+          min: 21
           max: 28
           step: 0.5
 
