@@ -1,0 +1,119 @@
+blueprint:
+  name: Contrôle Climatisation - Salon
+  description: Gère la climatisation du salon en fonction de la saison, de la plage horaire, et des températures définies.
+  domain: automation
+  input:
+    saison:
+      name: Saison
+      description: Saison actuelle (été ou hiver).
+      selector:
+        select:
+          options:
+            - ete
+            - hiver
+    plage_horaire:
+      name: Plage Horaire
+      description: Jour ou Nuit.
+      selector:
+        select:
+          options:
+            - jour
+            - nuit
+    thermometre_salon:
+      name: Capteur de température (Salon)
+      description: Capteur utilisé pour mesurer la température intérieure.
+      selector:
+        entity:
+          domain: sensor
+    thermometre_exterieur:
+      name: Capteur de température (Extérieur)
+      description: Capteur utilisé pour mesurer la température extérieure.
+      selector:
+        entity:
+          domain: sensor
+    clim_salon:
+      name: Climatiseur
+      description: Entité du climatiseur à contrôler.
+      selector:
+        entity:
+          domain: climate
+    seuil_bas:
+      name: Seuil de température basse
+      description: Température minimale avant d'activer le chauffage ou d'augmenter la climatisation.
+      selector:
+        number:
+          min: 10
+          max: 30
+          step: 0.5
+    seuil_haut:
+      name: Seuil de température haute
+      description: Température maximale avant d'activer le refroidissement ou de baisser le chauffage.
+      selector:
+        number:
+          min: 10
+          max: 30
+          step: 0.5
+    temperature_cible:
+      name: Température cible
+      description: Température à maintenir dans la pièce.
+      selector:
+        number:
+          min: 10
+          max: 30
+          step: 0.5
+
+trigger:
+  - platform: state
+    entity_id: !input thermometre_salon
+
+condition:
+  - condition: time
+    after: "07:00:00"
+    before: "00:00:00"
+    enabled: "{{ plage_horaire == 'jour' }}"
+  - condition: time
+    after: "00:00:01"
+    before: "06:59:59"
+    enabled: "{{ plage_horaire == 'nuit' }}"
+
+  - condition: or
+    conditions:
+      - condition: numeric_state
+        entity_id: !input thermometre_salon
+        below: !input seuil_bas
+      - condition: numeric_state
+        entity_id: !input thermometre_salon
+        above: !input seuil_haut
+
+action:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: >
+              {{ (states(!input thermometre_exterieur) | float) - 7 > !input seuil_haut }}
+        sequence:
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input clim_salon
+            data:
+              hvac_mode: cool
+          - service: climate.set_temperature
+            target:
+              entity_id: !input clim_salon
+            data:
+              temperature: >
+                {{ [!input seuil_haut, (states(!input thermometre_exterieur) | float) - 7] | min }}
+      - conditions: []
+        sequence:
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input clim_salon
+            data:
+              hvac_mode: >
+                {{ 'heat' if saison == 'hiver' else 'cool' }}
+          - service: climate.set_temperature
+            target:
+              entity_id: !input clim_salon
+            data:
+              temperature: !input temperature_cible
+mode: single
