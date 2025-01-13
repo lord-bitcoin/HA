@@ -2,7 +2,7 @@ blueprint:
   name: Gestion Climatisation Automatique
   description: Gère la climatisation avec des actions définies automatiquement selon la saison détectée.
   domain: automation
-  input:  
+  input:
     plage_horaire:
       name: Plage Horaire
       description: Jour ou Nuit.
@@ -45,7 +45,7 @@ blueprint:
           min: 18
           max: 26
           step: 0.5
-      defaut: 19
+      default: 19
     mode_printemps:
       name: Mode Printemps
       description: Mode à utiliser pendant le printemps.
@@ -122,8 +122,8 @@ blueprint:
       description: La température maximale autorisée dans le mode préservation.
       selector:
         number:
-          min: 24  
-          max: 30  
+          min: 24
+          max: 30
           step: 0.5
       default: 24
     seuil_tolerance:
@@ -141,11 +141,12 @@ trigger:
     entity_id: !input thermometres_interieur
 
 variables:
-  capteur_interieur: "{{ !input.thermometres_interieur }}"
+  capteur_interieur: !input thermometres_interieur
+  capteur_exterieur: !input thermometres_exterieur
 
-  temperature_max_preservation: "{{ !input.temperature_max_preservation }}"
+  temperature_max_preservation: !input temperature_max_preservation
   is_preservation_mode: >
-    {{ (states(!input.thermometres_exterieur) | float) - 7 > temperature_cible }}
+    {{ (states(capteur_exterieur) | float) - 7 > temperature_cible }}
 
   is_weekend: >
     {{ now().weekday() >= 5 }}
@@ -195,7 +196,7 @@ action:
           - condition: or
             conditions:
               - condition: numeric_state
-                entity_id: "{{ capteur_interieur }}"  # Utilisation de la variable pour éviter les erreurs.
+                entity_id: "{{ capteur_interieur }}"
                 below: "{{ temperature_min }}"
               - condition: numeric_state
                 entity_id: "{{ capteur_interieur }}"
@@ -211,6 +212,7 @@ action:
               entity_id: !input.climatiseurs
             data:
               temperature: "{{ temperature_cible }}"
+      # Condition : Si la température extérieure active le mode préservation
       - conditions:
           - condition: template
             value_template: >
@@ -221,5 +223,5 @@ action:
               entity_id: !input.climatiseurs
             data:
               temperature: >
-                {{ [(states(!input.thermometres_exterieur) | float) - 7, temperature_max_preservation] | min }}
+                {{ [(states(capteur_exterieur) | float) - 7, temperature_max_preservation] | min }}
 mode: single
