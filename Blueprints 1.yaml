@@ -1,5 +1,5 @@
 blueprint:
-  name: Gestion automatisée des climatiseurs.
+  name: Gestion automatisée des climatiseurs Gree/Heiwa
   description: |
     Automatise la gestion des climatiseurs selon la saison, en semaine ou en week-end, les plages horaires, et les températures cibles et seuils définits. Active également un mode humide si l'humidité mesurée sort des seuils définis. Permet de configurer un comportement spécifique pour la semaine ou le week-end.
   domain: automation
