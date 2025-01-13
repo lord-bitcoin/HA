@@ -141,21 +141,26 @@ trigger:
     entity_id: !input thermometres_interieur
 
 variables:
+  # Variables pour les entités fournies via les inputs
   capteur_interieur: !input thermometres_interieur
   capteur_exterieur: !input thermometres_exterieur
+  climatiseur: !input climatiseurs
 
+  # Températures
   temperature_max_preservation: !input temperature_max_preservation
+
+  # Mode préservation
   is_preservation_mode: >
     {{ (states(capteur_exterieur) | float) - 7 > temperature_cible }}
 
+  # Détection de week-end ou semaine
   is_weekend: >
     {{ now().weekday() >= 5 }}
-
   jour_semaine_selection: >
     {{ 'week-end' if is_weekend else 'semaine' }}
 
+  # Date et saison
   current_date: "{{ now().date() }}"
-
   saison_auto: >
     {% if current_date >= now().replace(month=3, day=21).date() and current_date < now().replace(month=6, day=21).date() %}
       'printemps'
@@ -167,6 +172,7 @@ variables:
       'hiver'
     {% endif %}
 
+  # Température cible et seuils
   temperature_cible: >
     {{ {
       'printemps': !input.temperature_printemps,
@@ -174,13 +180,12 @@ variables:
       'automne': !input.temperature_automne,
       'hiver': !input.temperature_hiver
     }[saison_auto] }}
-
   temperature_min: >
     {{ temperature_cible - !input.seuil_tolerance }}
-
   temperature_max: >
     {{ temperature_cible + !input.seuil_tolerance }}
 
+  # Mode HVAC en fonction de la saison
   hvac_mode: >
     {{ {
       'printemps': !input.mode_printemps,
@@ -204,14 +209,15 @@ action:
         sequence:
           - service: climate.set_hvac_mode
             target:
-              entity_id: !input.climatiseurs
+              entity_id: "{{ climatiseur }}"
             data:
               hvac_mode: "{{ hvac_mode }}"
           - service: climate.set_temperature
             target:
-              entity_id: !input.climatiseurs
+              entity_id: "{{ climatiseur }}"
             data:
               temperature: "{{ temperature_cible }}"
+
       # Condition : Si la température extérieure active le mode préservation
       - conditions:
           - condition: template
@@ -220,7 +226,7 @@ action:
         sequence:
           - service: climate.set_temperature
             target:
-              entity_id: !input.climatiseurs
+              entity_id: "{{ climatiseur }}"
             data:
               temperature: >
                 {{ [(states(capteur_exterieur) | float) - 7, temperature_max_preservation] | min }}
