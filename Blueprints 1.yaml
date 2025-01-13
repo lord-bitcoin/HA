@@ -9,16 +9,16 @@ blueprint:
       selector:
         select:
           options:
-            - jour
-            - nuit
+            - "jour"
+            - "nuit"
     plage_semaine:
       name: Plage Semaine
       description: Permet de sélectionner si l'automatisation s'applique à la semaine ou au week-end.
       selector:
         select:
           options:
-            - semaine
-            - week-end
+            - "semaine"
+            - "week-end"
     thermometres_intérieur:
       name: Capteur de température (Intérieur)
       description: Capteur utilisé pour mesurer la température intérieure.
@@ -43,48 +43,48 @@ blueprint:
       selector:
         select:
           options:
-            - off
-            - auto
-            - cool
-            - heat
-            - dry
-            - fan_only
+            - "off"
+            - "auto"
+            - "cool"
+            - "heat"
+            - "dry"
+            - "fan_only"
     mode_ete:
       name: Mode Été
       description: Mode à utiliser pendant l'été.
       selector:
         select:
           options:
-            - off
-            - auto
-            - cool
-            - heat
-            - dry
-            - fan_only
+            - "off"
+            - "auto"
+            - "cool"
+            - "heat"
+            - "dry"
+            - "fan_only"
     mode_automne:
       name: Mode Automne
       description: Mode à utiliser pendant l'automne.
       selector:
         select:
           options:
-            - off
-            - auto
-            - cool
-            - heat
-            - dry
-            - fan_only
+            - "off"
+            - "auto"
+            - "cool"
+            - "heat"
+            - "dry"
+            - "fan_only"
     mode_hiver:
       name: Mode Hiver
       description: Mode à utiliser pendant l'hiver.
       selector:
         select:
           options:
-            - off
-            - auto
-            - cool
-            - heat
-            - dry
-            - fan_only
+            - "off"
+            - "auto"
+            - "cool"
+            - "heat"
+            - "dry"
+            - "fan_only"
     temperature_printemps:
       name: Température cible (Printemps)
       description: Température à maintenir pendant le printemps.
@@ -150,10 +150,10 @@ variables:
   temperature_cible: >
     {{
       {
-        'printemps': "!input temperature_printemps",
-        'ete': "!input temperature_ete",
-        'automne': "!input temperature_automne",
-        'hiver': "!input temperature_hiver"
+        'printemps': !input "temperature_printemps",
+        'ete': !input "temperature_ete",
+        'automne': !input "temperature_automne",
+        'hiver': !input "temperature_hiver"
       }[saison_auto]
     }}
   temperature_min: >
@@ -163,10 +163,10 @@ variables:
   hvac_mode: >
     {{
       {
-        'printemps': "!input mode_printemps",
-        'ete': "!input mode_ete",
-        'automne': "!input mode_automne",
-        'hiver': "!input mode_hiver"
+        'printemps': !input "mode_printemps",
+        'ete': !input "mode_ete",
+        'automne': !input "mode_automne",
+        'hiver': !input "mode_hiver"
       }[saison_auto]
     }}
 
