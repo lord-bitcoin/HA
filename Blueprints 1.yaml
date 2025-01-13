@@ -3,13 +3,23 @@ blueprint:
   description: Gère la climatisation avec des actions définies automatiquement selon la saison détectée.
   domain: automation
   input:
-    climatiseurs:
-      name: Climatiseur
-      description: Entité du climatiseur à contrôler.
+    plage_horaire:
+      name: Plage Horaire
+      description: Jour ou Nuit.
       selector:
-        entity:
-          domain: climate
-    thermometres_interieur:
+        select:
+          options:
+            - jour
+            - nuit
+    plage_semaine:
+      name: Plage Semaine
+      description: Permet de sélectionner si l'automatisation s'applique à la semaine ou au week-end.
+      selector:
+        select:
+          options:
+            - semaine
+            - week-end
+    thermometres_intérieur:
       name: Capteur de température (Intérieur)
       description: Capteur utilisé pour mesurer la température intérieure.
       selector:
@@ -21,6 +31,12 @@ blueprint:
       selector:
         entity:
           domain: sensor
+    climatiseurs:
+      name: Climatiseur
+      description: Entité du climatiseur à contrôler.
+      selector:
+        entity:
+          domain: climate
     temperature_printemps:
       name: Température cible (Printemps)
       description: Température à maintenir pendant le printemps.
@@ -29,18 +45,6 @@ blueprint:
           min: 18
           max: 26
           step: 0.5
-      default: 19
-    mode_printemps:
-      name: Mode Printemps
-      description: Mode à utiliser pendant le printemps.
-      selector:
-        select:
-          options:
-            - auto
-            - cool
-            - heat
-            - dry
-            - fan_only
     temperature_ete:
       name: Température cible (Été)
       description: Température à maintenir pendant l'été.
@@ -49,18 +53,6 @@ blueprint:
           min: 18
           max: 26
           step: 0.5
-      default: 21
-    mode_ete:
-      name: Mode Été
-      description: Mode à utiliser pendant l'été.
-      selector:
-        select:
-          options:
-            - auto
-            - cool
-            - heat
-            - dry
-            - fan_only
     temperature_automne:
       name: Température cible (Automne)
       description: Température à maintenir pendant l'automne.
@@ -69,18 +61,6 @@ blueprint:
           min: 18
           max: 26
           step: 0.5
-      default: 20
-    mode_automne:
-      name: Mode Automne
-      description: Mode à utiliser pendant l'automne.
-      selector:
-        select:
-          options:
-            - auto
-            - cool
-            - heat
-            - dry
-            - fan_only
     temperature_hiver:
       name: Température cible (Hiver)
       description: Température à maintenir pendant l'hiver.
@@ -89,27 +69,16 @@ blueprint:
           min: 18
           max: 26
           step: 0.5
-      default: 20
-    mode_hiver:
-      name: Mode Hiver
-      description: Mode à utiliser pendant l'hiver.
+    heure_debut_plage_horaire:
+      name: Début de plage horaire
+      description: Heure à laquelle commence la plage horaire.
       selector:
-        select:
-          options:
-            - auto
-            - cool
-            - heat
-            - dry
-            - fan_only
-    temperature_max_preservation:
-      name: Température maximale de préservation
-      description: La température maximale autorisée dans le mode préservation.
+        time:
+    heure_fin_plage_horaire:
+      name: Fin de plage horaire
+      description: Heure à laquelle se termine la plage horaire.
       selector:
-        number:
-          min: 24
-          max: 30
-          step: 0.5
-      default: 24
+        time:
     seuil_tolerance:
       name: Seuil de tolérance
       description: Ajustement à appliquer autour de la température cible pour déclencher la climatisation.
@@ -118,46 +87,25 @@ blueprint:
           min: 0
           max: 3
           step: 0.5
-      default: 0.5
+    temperature_max_preservation:
+      name: Température maximum pour le mode préservation
+      description: Température maximale cible lors du mode préservation.
+      selector:
+        number:
+          min: 21
+          max: 28
+          step: 0.5
 
 trigger:
   - platform: state
-    entity_id: !input.thermometres_interieur
+    entity_id: !input thermometres_intérieur
 
 variables:
-  # Variables pour les entités fournies via les inputs
-  climatiseur: !input.climatiseurs
-  capteur_interieur: !input.thermometres_interieur
-  capteur_exterieur: !input.thermometres_exterieur
+  is_weekend: >
+    {{ now().weekday() >= 5 }}
+  jour_semaine_selection: >
+    {{ 'week-end' if is_weekend else 'semaine' }}
 
-  # Températures et seuils
-  temperature_max_preservation: !input.temperature_max_preservation
-  temperature_cible: >
-    {{ {
-      'printemps': !input.temperature_printemps,
-      'ete': !input.temperature_ete,
-      'automne': !input.temperature_automne,
-      'hiver': !input.temperature_hiver
-    }[saison_auto] }}
-  temperature_min: >
-    {{ temperature_cible - !input.seuil_tolerance }}
-  temperature_max: >
-    {{ temperature_cible + !input.seuil_tolerance }}
-
-  # Mode HVAC en fonction de la saison
-  hvac_mode: >
-    {{ {
-      'printemps': !input.mode_printemps,
-      'ete': !input.mode_ete,
-      'automne': !input.mode_automne,
-      'hiver': !input.mode_hiver
-    }[saison_auto] }}
-
-  # Mode préservation
-  is_preservation_mode: >
-    {{ (states(capteur_exterieur) | float) - 7 > temperature_cible }}
-
-  # Date et saison
   current_date: "{{ now().date() }}"
   saison_auto: >
     {% if current_date >= now().replace(month=3, day=21).date() and current_date < now().replace(month=6, day=21).date() %}
@@ -169,40 +117,61 @@ variables:
     {% else %}
       'hiver'
     {% endif %}
+  temperature_cible: >
+    {{ {
+      'printemps': !input temperature_printemps,
+      'ete': !input temperature_ete,
+      'automne': !input temperature_automne,
+      'hiver': !input temperature_hiver
+    }[saison_auto] }}
+  temperature_min: >
+    {{ temperature_cible - !input seuil_tolerance }}
+  temperature_max: >
+    {{ temperature_cible + !input seuil_tolerance }}
+  hvac_mode: >
+    {{ 'cool' if saison_auto in ['printemps', 'ete'] else 'heat' }}
 
 action:
   - choose:
-      # Condition : Si la température intérieure est hors des seuils
       - conditions:
           - condition: or
             conditions:
               - condition: numeric_state
-                entity_id: "{{ capteur_interieur }}"
-                below: "{{ temperature_min }}"
+                entity_id: !input thermometres_intérieur
+                below: temperature_min
               - condition: numeric_state
-                entity_id: "{{ capteur_interieur }}"
-                above: "{{ temperature_max }}"
+                entity_id: !input thermometres_intérieur
+                above: temperature_max
         sequence:
           - service: climate.set_hvac_mode
             target:
-              entity_id: "{{ climatiseur }}"
+              entity_id: !input climatiseurs
             data:
               hvac_mode: "{{ hvac_mode }}"
           - service: climate.set_temperature
             target:
-              entity_id: "{{ climatiseur }}"
+              entity_id: !input climatiseurs
             data:
-              temperature: "{{ temperature_cible }}"
-      # Condition : Si la température extérieure active le mode préservation
+              temperature: temperature_cible
       - conditions:
           - condition: template
             value_template: >
-              {{ is_preservation_mode }}
+              {{ (states(!input thermometres_exterieur) | float) - 7 > temperature_cible }}
+      - condition:
+          - condition: template
+            value_template: >
+              {{ !input.plage_semaine == jour_semaine_selection }}
+
         sequence:
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input climatiseurs
+            data:
+              hvac_mode: cool
           - service: climate.set_temperature
             target:
-              entity_id: "{{ climatiseur }}"
+              entity_id: !input climatiseurs
             data:
               temperature: >
-                {{ [(states(capteur_exterieur) | float) - 7, temperature_max_preservation] | min }}
+                {{ [(states(!input thermometres_exterieur) | float) - 7, !input temperature_max_preservation] | min }}
 mode: single
