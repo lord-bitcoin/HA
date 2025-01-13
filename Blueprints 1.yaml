@@ -11,22 +11,14 @@ blueprint:
           options:
             - jour
             - nuit
-    plage_semaine:
-      name: Plage Semaine
-      description: Permet de sélectionner si l'automatisation s'applique à la semaine ou au week-end.
-      selector:
-        select:
-          options:
-            - semaine
-            - week-end
     thermometres_intérieur:
-      name: Capteur de température (Intérieur)
+      name: Capteurs de température (Intérieur)
       description: Capteur utilisé pour mesurer la température intérieure.
       selector:
         entity:
           domain: sensor
     thermometres_exterieur:
-      name: Capteur de température (Extérieur)
+      name: Capteurs de température (Extérieur)
       description: Capteur utilisé pour mesurer la température extérieure.
       selector:
         entity:
@@ -92,7 +84,7 @@ blueprint:
       description: Température maximale cible lors du mode préservation.
       selector:
         number:
-          min: 21
+          min: 24
           max: 28
           step: 0.5
 
@@ -101,11 +93,6 @@ trigger:
     entity_id: !input thermometres_intérieur
 
 variables:
-  is_weekend: >
-    {{ now().weekday() >= 5 }}
-  jour_semaine_selection: >
-    {{ 'week-end' if is_weekend else 'semaine' }}
-
   current_date: "{{ now().date() }}"
   saison_auto: >
     {% if current_date >= now().replace(month=3, day=21).date() and current_date < now().replace(month=6, day=21).date() %}
@@ -157,11 +144,6 @@ action:
           - condition: template
             value_template: >
               {{ (states(!input thermometres_exterieur) | float) - 7 > temperature_cible }}
-      - condition:
-          - condition: template
-            value_template: >
-              {{ !input.plage_semaine == jour_semaine_selection }}
-
         sequence:
           - service: climate.set_hvac_mode
             target:
