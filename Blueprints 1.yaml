@@ -141,6 +141,8 @@ trigger:
     entity_id: !input thermometres_interieur
 
 variables:
+  capteur_interieur: "{{ !input.thermometres_interieur }}"
+
   temperature_max_preservation: "{{ !input.temperature_max_preservation }}"
   is_preservation_mode: >
     {{ (states(!input.thermometres_exterieur) | float) - 7 > temperature_cible }}
@@ -193,10 +195,10 @@ action:
           - condition: or
             conditions:
               - condition: numeric_state
-                entity_id: !input.thermometres_interieur
+                entity_id: "{{ capteur_interieur }}"  # Utilisation de la variable pour éviter les erreurs.
                 below: "{{ temperature_min }}"
               - condition: numeric_state
-                entity_id: !input.thermometres_interieur
+                entity_id: "{{ capteur_interieur }}"
                 above: "{{ temperature_max }}"
         sequence:
           - service: climate.set_hvac_mode
@@ -209,7 +211,6 @@ action:
               entity_id: !input.climatiseurs
             data:
               temperature: "{{ temperature_cible }}"
-
       - conditions:
           - condition: template
             value_template: >
