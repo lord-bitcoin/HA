@@ -76,6 +76,7 @@ blueprint:
         number:
           min: 18
           max: 26
+          step: 0.5
           unit_of_measurement: °C
     temperature_automne:
       name: Température cible - Automne
@@ -84,6 +85,7 @@ blueprint:
         number:
           min: 18
           max: 26
+          step: 0.5
           unit_of_measurement: °C
     temperature_hiver:
       name: Température cible - Hiver
@@ -92,6 +94,7 @@ blueprint:
         number:
           min: 18
           max: 26
+          step: 0.5
           unit_of_measurement: °C
     heure_debut_jour:
       name: Heure de début de la journée
@@ -109,15 +112,17 @@ blueprint:
       selector:
         number:
           min: 0
-          max: 10
+          max: 3
+          step: 0.5
           unit_of_measurement: °C
     temperature_max_preservation:
       name: Température max tolérée - Mode préservation
       description: Température maximale à ne pas dépasser en mode préservation.
       selector:
         number:
-          min: 10
-          max: 40
+          min: 20
+          max: 30
+          step: 0.5
           unit_of_measurement: °C
 mode: single
 trigger:
