@@ -243,3 +243,16 @@ action:
             data:
               entity_id: !input climatiseur
               hvac_mode: dry
+      - conditions:
+          - condition: template
+            value_template: >-
+              {{ (input_humidite_min + 2.5) <= humidite_interieur <= (input_humidite_max - 2.5) and temperature_min <= temperature_interieur <= temperature_max }}
+        sequence:
+          - service: climate.set_hvac_mode
+            data:
+              entity_id: !input climatiseur
+              hvac_mode: '{{ mode_actuel }}'
+          - service: climate.set_temperature
+            data:
+              entity_id: !input climatiseur
+              temperature: '{{ temperature_cible }}'
