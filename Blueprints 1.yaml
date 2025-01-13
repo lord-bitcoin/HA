@@ -1,6 +1,6 @@
 blueprint:
-  name: Contrôle Climatisation - Salon
-  description: Gère la climatisation du salon avec des actions définies selon la saison et la plage horaire.
+  name: Gestion Climatisation
+  description: Gère la climatisation définie avec des actions définies selon la saison et la plage horaire.
   domain: automation
   input:
     saison:
@@ -71,28 +71,33 @@ blueprint:
           min: 15
           max: 30
           step: 0.5
+    heure_debut_jour:
+      name: Heure début jour
+      description: Heure à laquelle commence la plage horaire jour.
+      selector:
+        time:
+    heure_fin_jour:
+      name: Heure fin jour
+      description: Heure à laquelle se termine la plage horaire jour.
+      selector:
+        time:
+    temperature_max_preservation:
+      name: Température maximum pour le mode préservation
+      description: Température maximale cible lors du mode préservation.
+      selector:
+        number:
+          min: 15
+          max: 30
+          step: 0.5
 
 trigger:
   - platform: state
-    entity_id: !input thermometre_salon
+    entity_id: !input thermometres_intérieur
 
 condition:
-  - condition: or
-    conditions:
-      - condition: and
-        conditions:
-          - condition: time
-            after: "07:00:00"
-            before: "00:00:00"
-          - condition: template
-            value_template: "{{ now().weekday() < 5 }}"  # Semaine
-      - condition: and
-        conditions:
-          - condition: time
-            after: "09:00:00"
-            before: "00:00:00"
-          - condition: template
-            value_template: "{{ now().weekday() >= 5 }}"  # Week-end
+  - condition: time
+    after: !input heure_debut_jour
+    before: !input heure_fin_jour
 
 variables:
   temperature_cible: >
@@ -107,16 +112,32 @@ action:
   - choose:
       - conditions:
           - condition: template
-            value_template: "{{ !input saison == 'printemps' }}"
+            value_template: >
+              {{ (states(!input thermometres_exterieur) | float) - 7 > temperature_cible }}
         sequence:
           - service: climate.set_hvac_mode
             target:
-              entity_id: !input clim_salon
+              entity_id: !input climatiseurs
             data:
               hvac_mode: cool
           - service: climate.set_temperature
             target:
-              entity_id: !input clim_salon
+              entity_id: !input climatiseurs
+            data:
+              temperature: >
+                {{ [(states(!input thermometres_exterieur) | float) - 7, !input temperature_max_preservation] | min }}
+      - conditions:
+          - condition: template
+            value_template: "{{ !input saison == 'printemps' }}"
+        sequence:
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input climatiseurs
+            data:
+              hvac_mode: cool
+          - service: climate.set_temperature
+            target:
+              entity_id: !input climatiseurs
             data:
               temperature: !input temperature_printemps
       - conditions:
@@ -125,12 +146,12 @@ action:
         sequence:
           - service: climate.set_hvac_mode
             target:
-              entity_id: !input clim_salon
+              entity_id: !input climatiseurs
             data:
               hvac_mode: cool
           - service: climate.set_temperature
             target:
-              entity_id: !input clim_salon
+              entity_id: !input climatiseurs
             data:
               temperature: !input temperature_ete
       - conditions:
@@ -139,12 +160,12 @@ action:
         sequence:
           - service: climate.set_hvac_mode
             target:
-              entity_id: !input clim_salon
+              entity_id: !input climatiseurs
             data:
               hvac_mode: heat
           - service: climate.set_temperature
             target:
-              entity_id: !input clim_salon
+              entity_id: !input climatiseurs
             data:
               temperature: !input temperature_automne
       - conditions:
@@ -153,12 +174,12 @@ action:
         sequence:
           - service: climate.set_hvac_mode
             target:
-              entity_id: !input clim_salon
+              entity_id: !input climatiseurs
             data:
               hvac_mode: heat
           - service: climate.set_temperature
             target:
-              entity_id: !input clim_salon
+              entity_id: !input climatiseurs
             data:
               temperature: !input temperature_hiver
 mode: single
