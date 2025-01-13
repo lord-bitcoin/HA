@@ -1,8 +1,18 @@
 blueprint:
   name: Contrôle Climatisation - Salon
-  description: Gère la climatisation du salon en fonction de la saison, de la plage horaire, et des températures définies.
+  description: Gère la climatisation du salon avec des actions définies selon la saison et la plage horaire.
   domain: automation
   input:
+    saison:
+      name: Saison
+      description: Définir manuellement la saison pour personnaliser les actions.
+      selector:
+        select:
+          options:
+            - printemps
+            - ete
+            - automne
+            - hiver
     plage_horaire:
       name: Plage Horaire
       description: Jour ou Nuit.
@@ -11,43 +21,51 @@ blueprint:
           options:
             - jour
             - nuit
-    thermometre_salon:
-      name: Capteur de température (Salon)
+    thermometres_intérieur:
+      name: Capteurs de température (Intérieur)
       description: Capteur utilisé pour mesurer la température intérieure.
       selector:
         entity:
           domain: sensor
-    thermometre_exterieur:
-      name: Capteur de température (Extérieur)
+    thermometres_exterieur:
+      name: Capteurs de température (Extérieur)
       description: Capteur utilisé pour mesurer la température extérieure.
       selector:
         entity:
           domain: sensor
-    clim_salon:
+    climatiseurs:
       name: Climatiseur
       description: Entité du climatiseur à contrôler.
       selector:
         entity:
           domain: climate
-    seuil_bas:
-      name: Seuil de température basse
-      description: Température minimale avant d'activer le chauffage ou d'augmenter la climatisation.
-      selector:
-        number:
-          min: 10
-          max: 30
-          step: 0.5
-    seuil_haut:
-      name: Seuil de température haute
-      description: Température maximale avant d'activer le refroidissement ou de baisser le chauffage.
+    temperature_printemps:
+      name: Température cible (Printemps)
+      description: Température à maintenir pendant le printemps.
       selector:
         number:
           min: 15
           max: 30
           step: 0.5
-    temperature_cible:
-      name: Température cible
-      description: Température à maintenir dans la pièce.
+    temperature_ete:
+      name: Température cible (Été)
+      description: Température à maintenir pendant l'été.
+      selector:
+        number:
+          min: 15
+          max: 30
+          step: 0.5
+    temperature_automne:
+      name: Température cible (Automne)
+      description: Température à maintenir pendant l'automne.
+      selector:
+        number:
+          min: 15
+          max: 30
+          step: 0.5
+    temperature_hiver:
+      name: Température cible (Hiver)
+      description: Température à maintenir pendant l'hiver.
       selector:
         number:
           min: 15
@@ -75,50 +93,21 @@ condition:
             before: "00:00:00"
           - condition: template
             value_template: "{{ now().weekday() >= 5 }}"  # Week-end
-  - condition: or
-    conditions:
-      - condition: and
-        conditions:
-          - condition: time
-            after: "00:00:01"
-            before: "06:59:59"
-          - condition: template
-            value_template: "{{ now().weekday() < 5 }}"  # Semaine
-      - condition: and
-        conditions:
-          - condition: time
-            after: "00:00:01"
-            before: "08:59:59"
-          - condition: template
-            value_template: "{{ now().weekday() >= 5 }}"  # Week-end
-  - condition: or
-    conditions:
-      - condition: numeric_state
-        entity_id: !input thermometre_salon
-        below: !input seuil_bas
-      - condition: numeric_state
-        entity_id: !input thermometre_salon
-        above: !input seuil_haut
 
 variables:
-  current_season: >
-    {% set today = now().date() %}
-    {% if today >= today.replace(month=3, day=21) and today < today.replace(month=6, day=21) %}
-      'printemps'
-    {% elif today >= today.replace(month=6, day=21) and today < today.replace(month=9, day=21) %}
-      'ete'
-    {% elif today >= today.replace(month=9, day=21) and today < today.replace(month=12, day=21) %}
-      'automne'
-    {% else %}
-      'hiver'
-    {% endif %}
+  temperature_cible: >
+    {{ {
+      'printemps': !input temperature_printemps,
+      'ete': !input temperature_ete,
+      'automne': !input temperature_automne,
+      'hiver': !input temperature_hiver
+    }[!input saison] }}
 
 action:
   - choose:
       - conditions:
           - condition: template
-            value_template: >
-              {{ (states(!input thermometre_exterieur) | float) - 7 > !input seuil_haut }}
+            value_template: "{{ !input saison == 'printemps' }}"
         sequence:
           - service: climate.set_hvac_mode
             target:
@@ -129,19 +118,47 @@ action:
             target:
               entity_id: !input clim_salon
             data:
-              temperature: >
-                {{ [!input seuil_haut, (states(!input thermometre_exterieur) | float) - 7] | min }}
-      - conditions: []
+              temperature: !input temperature_printemps
+      - conditions:
+          - condition: template
+            value_template: "{{ !input saison == 'ete' }}"
         sequence:
           - service: climate.set_hvac_mode
             target:
               entity_id: !input clim_salon
             data:
-              hvac_mode: >
-                {{ 'heat' if (states(!input thermometre_exterieur) | float) < 21 and current_season != 'ete' else 'cool' }}
+              hvac_mode: cool
           - service: climate.set_temperature
             target:
               entity_id: !input clim_salon
             data:
-              temperature: !input temperature_cible
+              temperature: !input temperature_ete
+      - conditions:
+          - condition: template
+            value_template: "{{ !input saison == 'automne' }}"
+        sequence:
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input clim_salon
+            data:
+              hvac_mode: heat
+          - service: climate.set_temperature
+            target:
+              entity_id: !input clim_salon
+            data:
+              temperature: !input temperature_automne
+      - conditions:
+          - condition: template
+            value_template: "{{ !input saison == 'hiver' }}"
+        sequence:
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input clim_salon
+            data:
+              hvac_mode: heat
+          - service: climate.set_temperature
+            target:
+              entity_id: !input clim_salon
+            data:
+              temperature: !input temperature_hiver
 mode: single
