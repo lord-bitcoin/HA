@@ -32,47 +32,43 @@ blueprint:
    temperature_printemps:
       name: Température cible (Printemps)
       description: Température à maintenir pendant le printemps.
-      default: 19
       selector:
         number:
-          min: 15
-          max: 30
+          min: 18
+          max: 26
           step: 0.5
     temperature_ete:
       name: Température cible (Été)
       description: Température à maintenir pendant l'été.
-      default: 21
       selector:
         number:
-          min: 15
-          max: 30
+          min: 18
+          max: 26
           step: 0.5
     temperature_automne:
       name: Température cible (Automne)
       description: Température à maintenir pendant l'automne.
-      default: 19
       selector:
         number:
-          min: 15
-          max: 30
+          min: 18
+          max: 26
           step: 0.5
     temperature_hiver:
       name: Température cible (Hiver)
       description: Température à maintenir pendant l'hiver.
-      default: 19
       selector:
         number:
-          min: 15
-          max: 30
+          min: 18
+          max: 26
           step: 0.5
     heure_debut_plage_horaire:
       name: début de plage horaire
-      description: Heure à laquelle commence la plage horaire jour.
+      description: Heure à laquelle commence la plage horaire.
       selector:
         time:
     heure_fin_plage_horaire:
       name: fin de plage horaire
-      description: Heure à laquelle se termine la plage horaire jour.
+      description: Heure à laquelle se termine la plage horaire.
       selector:
         time:
     seuil_tolerance:
@@ -88,8 +84,8 @@ blueprint:
       description: Température maximale cible lors du mode préservation.
       selector:
         number:
-          min: 20
-          max: 30
+          min: 24
+          max: 28
           step: 0.5
 
 trigger:
