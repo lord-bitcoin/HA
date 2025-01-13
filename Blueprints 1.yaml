@@ -1,18 +1,8 @@
 blueprint:
-  name: Gestion Climatisation
-  description: Gère la climatisation définie avec des actions définies selon la saison et la plage horaire.
+  name: Gestion Climatisation avec Saison Auto et Paramètres Manuels
+  description: Gère la climatisation définie avec des actions par saison et la possibilité de configurer chaque saison.
   domain: automation
   input:
-    saison:
-      name: Saison
-      description: Définir manuellement la saison pour personnaliser les actions.
-      selector:
-        select:
-          options:
-            - printemps
-            - ete
-            - automne
-            - hiver
     plage_horaire:
       name: Plage Horaire
       description: Jour ou Nuit.
@@ -71,6 +61,18 @@ blueprint:
           min: 15
           max: 30
           step: 0.5
+    configurer_saison:
+      name: Configurer une saison spécifique
+      description: Permet de choisir une saison à configurer manuellement (facultatif).
+      selector:
+        select:
+          options:
+            - printemps
+            - ete
+            - automne
+            - hiver
+            - automatique
+      default: automatique
     heure_debut_jour:
       name: Heure début jour
       description: Heure à laquelle commence la plage horaire jour.
@@ -81,6 +83,14 @@ blueprint:
       description: Heure à laquelle se termine la plage horaire jour.
       selector:
         time:
+    seuil_tolerance:
+      name: Seuil de tolérance
+      description: Ajustement à appliquer autour de la température cible pour déclencher la climatisation.
+      selector:
+        number:
+          min: 0
+          max: 3
+          step: 0.5
     temperature_max_preservation:
       name: Température maximum pour le mode préservation
       description: Température maximale cible lors du mode préservation.
@@ -94,22 +104,56 @@ trigger:
   - platform: state
     entity_id: !input thermometres_intérieur
 
-condition:
-  - condition: time
-    after: !input heure_debut_jour
-    before: !input heure_fin_jour
-
 variables:
+  current_date: "{{ now().date() }}"
+  saison_auto: >
+    {% if current_date >= now().replace(month=3, day=21).date() and current_date < now().replace(month=6, day=21).date() %}
+      'printemps'
+    {% elif current_date >= now().replace(month=6, day=21).date() and current_date < now().replace(month=9, day=21).date() %}
+      'ete'
+    {% elif current_date >= now().replace(month=9, day=21).date() and current_date < now().replace(month=12, day=21).date() %}
+      'automne'
+    {% else %}
+      'hiver'
+    {% endif %}
+  saison: >
+    {{ !input configurer_saison if !input configurer_saison != 'automatique' else saison_auto }}
   temperature_cible: >
     {{ {
       'printemps': !input temperature_printemps,
       'ete': !input temperature_ete,
       'automne': !input temperature_automne,
       'hiver': !input temperature_hiver
-    }[!input saison] }}
+    }[saison] }}
+  temperature_min: >
+    {{ temperature_cible - !input seuil_tolerance }}
+  temperature_max: >
+    {{ temperature_cible + !input seuil_tolerance }}
+  hvac_mode: >
+    {{ 'cool' if saison in ['printemps', 'ete'] else 'heat' }}
 
 action:
   - choose:
+      - conditions:
+          - condition: or
+            conditions:
+              - condition: numeric_state
+                entity_id: !input thermometres_intérieur
+                below: temperature_min
+              - condition: numeric_state
+                entity_id: !input thermometres_intérieur
+                above: temperature_max
+        sequence:
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input climatiseurs
+            data:
+              hvac_mode: "{{ hvac_mode }}"
+          - service: climate.set_temperature
+            target:
+              entity_id: !input climatiseurs
+            data:
+              temperature: temperature_cible
       - conditions:
           - condition: template
             value_template: >
@@ -126,60 +170,4 @@ action:
             data:
               temperature: >
                 {{ [(states(!input thermometres_exterieur) | float) - 7, !input temperature_max_preservation] | min }}
-      - conditions:
-          - condition: template
-            value_template: "{{ !input saison == 'printemps' }}"
-        sequence:
-          - service: climate.set_hvac_mode
-            target:
-              entity_id: !input climatiseurs
-            data:
-              hvac_mode: cool
-          - service: climate.set_temperature
-            target:
-              entity_id: !input climatiseurs
-            data:
-              temperature: !input temperature_printemps
-      - conditions:
-          - condition: template
-            value_template: "{{ !input saison == 'ete' }}"
-        sequence:
-          - service: climate.set_hvac_mode
-            target:
-              entity_id: !input climatiseurs
-            data:
-              hvac_mode: cool
-          - service: climate.set_temperature
-            target:
-              entity_id: !input climatiseurs
-            data:
-              temperature: !input temperature_ete
-      - conditions:
-          - condition: template
-            value_template: "{{ !input saison == 'automne' }}"
-        sequence:
-          - service: climate.set_hvac_mode
-            target:
-              entity_id: !input climatiseurs
-            data:
-              hvac_mode: heat
-          - service: climate.set_temperature
-            target:
-              entity_id: !input climatiseurs
-            data:
-              temperature: !input temperature_automne
-      - conditions:
-          - condition: template
-            value_template: "{{ !input saison == 'hiver' }}"
-        sequence:
-          - service: climate.set_hvac_mode
-            target:
-              entity_id: !input climatiseurs
-            data:
-              hvac_mode: heat
-          - service: climate.set_temperature
-            target:
-              entity_id: !input climatiseurs
-            data:
-              temperature: !input temperature_hiver
 mode: single
