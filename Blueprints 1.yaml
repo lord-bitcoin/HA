@@ -43,7 +43,6 @@ blueprint:
       selector:
         select:
           options:
-            - "off"
             - "auto"
             - "cool"
             - "heat"
@@ -55,7 +54,6 @@ blueprint:
       selector:
         select:
           options:
-            - "off"
             - "auto"
             - "cool"
             - "heat"
@@ -67,7 +65,6 @@ blueprint:
       selector:
         select:
           options:
-            - "off"
             - "auto"
             - "cool"
             - "heat"
@@ -79,7 +76,6 @@ blueprint:
       selector:
         select:
           options:
-            - "off"
             - "auto"
             - "cool"
             - "heat"
