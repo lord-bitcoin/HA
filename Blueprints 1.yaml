@@ -1,6 +1,6 @@
 blueprint:
-  name: Gestion Climatisation avec Saison Auto et Paramètres Manuels
-  description: Gère la climatisation définie avec des actions par saison et la possibilité de configurer chaque saison.
+  name: Gestion Climatisation Automatique
+  description: Gère la climatisation avec des actions définies automatiquement selon la saison détectée.
   domain: automation
   input:
     plage_horaire:
@@ -61,18 +61,6 @@ blueprint:
           min: 15
           max: 30
           step: 0.5
-    configurer_saison:
-      name: Configurer une saison spécifique
-      description: Permet de choisir une saison à configurer manuellement (facultatif).
-      selector:
-        select:
-          options:
-            - printemps
-            - ete
-            - automne
-            - hiver
-            - automatique
-      default: automatique
     heure_debut_jour:
       name: Heure début jour
       description: Heure à laquelle commence la plage horaire jour.
@@ -116,21 +104,19 @@ variables:
     {% else %}
       'hiver'
     {% endif %}
-  saison: >
-    {{ !input configurer_saison if !input configurer_saison != 'automatique' else saison_auto }}
   temperature_cible: >
     {{ {
       'printemps': !input temperature_printemps,
       'ete': !input temperature_ete,
       'automne': !input temperature_automne,
       'hiver': !input temperature_hiver
-    }[saison] }}
+    }[saison_auto] }}
   temperature_min: >
     {{ temperature_cible - !input seuil_tolerance }}
   temperature_max: >
     {{ temperature_cible + !input seuil_tolerance }}
   hvac_mode: >
-    {{ 'cool' if saison in ['printemps', 'ete'] else 'heat' }}
+    {{ 'cool' if saison_auto in ['printemps', 'ete'] else 'heat' }}
 
 action:
   - choose:
