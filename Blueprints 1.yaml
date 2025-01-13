@@ -1,8 +1,7 @@
 blueprint:
-  name: Gestion automatisée des climatiseurs par saison et température
+  name: Gestion automatisée des climatiseurs.
   description: |
-    Automatise la gestion des climatiseurs selon la saison, les plages horaires, 
-    et les températures mesurées à l'intérieur et à l'extérieur. Active également un mode humide si l'humidité mesurée sort des seuils définis. Permet de configurer un comportement spécifique pour la semaine ou le week-end.
+    Automatise la gestion des climatiseurs selon la saison, en semaine ou en week-end, les plages horaires, et les températures cibles et seuils définits. Active également un mode humide si l'humidité mesurée sort des seuils définis. Permet de configurer un comportement spécifique pour la semaine ou le week-end.
   domain: automation
   input:
     climatiseur:
