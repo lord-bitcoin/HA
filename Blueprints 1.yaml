@@ -29,7 +29,7 @@ blueprint:
       selector:
         entity:
           domain: climate
-   temperature_printemps:
+    temperature_printemps:
       name: Température cible (Printemps)
       description: Température à maintenir pendant le printemps.
       selector:
@@ -62,12 +62,12 @@ blueprint:
           max: 26
           step: 0.5
     heure_debut_plage_horaire:
-      name: début de plage horaire
+      name: Début de plage horaire
       description: Heure à laquelle commence la plage horaire.
       selector:
         time:
     heure_fin_plage_horaire:
-      name: fin de plage horaire
+      name: Fin de plage horaire
       description: Heure à laquelle se termine la plage horaire.
       selector:
         time:
