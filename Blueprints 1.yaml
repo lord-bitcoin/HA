@@ -148,27 +148,34 @@ variables:
       'hiver'
     {% endif %}
   temperature_cible: >
-    {{ {
-      'printemps': !input temperature_printemps,
-      'ete': !input temperature_ete,
-      'automne': !input temperature_automne,
-      'hiver': !input temperature_hiver
-    }[saison_auto] }}
+    {{
+      {
+        'printemps': "!input temperature_printemps",
+        'ete': "!input temperature_ete",
+        'automne': "!input temperature_automne",
+        'hiver': "!input temperature_hiver"
+      }[saison_auto]
+    }}
   temperature_min: >
     {{ temperature_cible - !input seuil_tolerance }}
   temperature_max: >
     {{ temperature_cible + !input seuil_tolerance }}
   hvac_mode: >
-    {{ {
-      'printemps': !input mode_printemps,
-      'ete': !input mode_ete,
-      'automne': !input mode_automne,
-      'hiver': !input mode_hiver
-    }[saison_auto] }}
+    {{
+      {
+        'printemps': "!input mode_printemps",
+        'ete': "!input mode_ete",
+        'automne': "!input mode_automne",
+        'hiver': "!input mode_hiver"
+      }[saison_auto]
+    }}
 
 action:
   - choose:
       - conditions:
+          - condition: template
+            value_template: >
+              {{ (states("!input thermometres_exterieur") | float) - 7 > temperature_cible }}
           - condition: or
             conditions:
               - condition: numeric_state
