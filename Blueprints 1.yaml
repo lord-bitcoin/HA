@@ -3,14 +3,6 @@ blueprint:
   description: Gère la climatisation du salon en fonction de la saison, de la plage horaire, et des températures définies.
   domain: automation
   input:
-    saison:
-      name: Saison
-      description: Saison actuelle (été ou hiver).
-      selector:
-        select:
-          options:
-            - ete
-            - hiver
     plage_horaire:
       name: Plage Horaire
       description: Jour ou Nuit.
@@ -50,7 +42,7 @@ blueprint:
       description: Température maximale avant d'activer le refroidissement ou de baisser le chauffage.
       selector:
         number:
-          min: 10
+          min: 15
           max: 30
           step: 0.5
     temperature_cible:
@@ -58,7 +50,7 @@ blueprint:
       description: Température à maintenir dans la pièce.
       selector:
         number:
-          min: 10
+          min: 15
           max: 30
           step: 0.5
 
@@ -67,15 +59,38 @@ trigger:
     entity_id: !input thermometre_salon
 
 condition:
-  - condition: time
-    after: "07:00:00"
-    before: "00:00:00"
-    enabled: "{{ plage_horaire == 'jour' }}"
-  - condition: time
-    after: "00:00:01"
-    before: "06:59:59"
-    enabled: "{{ plage_horaire == 'nuit' }}"
-
+  - condition: or
+    conditions:
+      - condition: and
+        conditions:
+          - condition: time
+            after: "07:00:00"
+            before: "00:00:00"
+          - condition: template
+            value_template: "{{ now().weekday() < 5 }}"  # Semaine
+      - condition: and
+        conditions:
+          - condition: time
+            after: "09:00:00"
+            before: "00:00:00"
+          - condition: template
+            value_template: "{{ now().weekday() >= 5 }}"  # Week-end
+  - condition: or
+    conditions:
+      - condition: and
+        conditions:
+          - condition: time
+            after: "00:00:01"
+            before: "06:59:59"
+          - condition: template
+            value_template: "{{ now().weekday() < 5 }}"  # Semaine
+      - condition: and
+        conditions:
+          - condition: time
+            after: "00:00:01"
+            before: "08:59:59"
+          - condition: template
+            value_template: "{{ now().weekday() >= 5 }}"  # Week-end
   - condition: or
     conditions:
       - condition: numeric_state
@@ -84,6 +99,19 @@ condition:
       - condition: numeric_state
         entity_id: !input thermometre_salon
         above: !input seuil_haut
+
+variables:
+  current_season: >
+    {% set today = now().date() %}
+    {% if today >= today.replace(month=3, day=21) and today < today.replace(month=6, day=21) %}
+      'printemps'
+    {% elif today >= today.replace(month=6, day=21) and today < today.replace(month=9, day=21) %}
+      'ete'
+    {% elif today >= today.replace(month=9, day=21) and today < today.replace(month=12, day=21) %}
+      'automne'
+    {% else %}
+      'hiver'
+    {% endif %}
 
 action:
   - choose:
@@ -110,7 +138,7 @@ action:
               entity_id: !input clim_salon
             data:
               hvac_mode: >
-                {{ 'heat' if saison == 'hiver' else 'cool' }}
+                {{ 'heat' if (states(!input thermometre_exterieur) | float) < 21 and current_season != 'ete' else 'cool' }}
           - service: climate.set_temperature
             target:
               entity_id: !input clim_salon
