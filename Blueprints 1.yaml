@@ -37,6 +37,54 @@ blueprint:
       selector:
         entity:
           domain: climate
+    mode_printemps:
+      name: Mode Printemps
+      description: Mode à utiliser pendant le printemps.
+      selector:
+        select:
+          options:
+            - off
+            - auto
+            - cool
+            - heat
+            - dry
+            - fan_only
+    mode_ete:
+      name: Mode Été
+      description: Mode à utiliser pendant l'été.
+      selector:
+        select:
+          options:
+            - off
+            - auto
+            - cool
+            - heat
+            - dry
+            - fan_only
+    mode_automne:
+      name: Mode Automne
+      description: Mode à utiliser pendant l'automne.
+      selector:
+        select:
+          options:
+            - off
+            - auto
+            - cool
+            - heat
+            - dry
+            - fan_only
+    mode_hiver:
+      name: Mode Hiver
+      description: Mode à utiliser pendant l'hiver.
+      selector:
+        select:
+          options:
+            - off
+            - auto
+            - cool
+            - heat
+            - dry
+            - fan_only
     temperature_printemps:
       name: Température cible (Printemps)
       description: Température à maintenir pendant le printemps.
@@ -69,16 +117,6 @@ blueprint:
           min: 18
           max: 26
           step: 0.5
-    heure_debut_plage_horaire:
-      name: Début de plage horaire
-      description: Heure à laquelle commence la plage horaire.
-      selector:
-        time:
-    heure_fin_plage_horaire:
-      name: Fin de plage horaire
-      description: Heure à laquelle se termine la plage horaire.
-      selector:
-        time:
     seuil_tolerance:
       name: Seuil de tolérance
       description: Ajustement à appliquer autour de la température cible pour déclencher la climatisation.
@@ -86,14 +124,6 @@ blueprint:
         number:
           min: 0
           max: 3
-          step: 0.5
-    temperature_max_preservation:
-      name: Température maximum pour le mode préservation
-      description: Température maximale cible lors du mode préservation.
-      selector:
-        number:
-          min: 21
-          max: 28
           step: 0.5
 
 trigger:
@@ -129,7 +159,12 @@ variables:
   temperature_max: >
     {{ temperature_cible + !input seuil_tolerance }}
   hvac_mode: >
-    {{ 'cool' if saison_auto in ['printemps', 'ete'] else 'heat' }}
+    {{ {
+      'printemps': !input mode_printemps,
+      'ete': !input mode_ete,
+      'automne': !input mode_automne,
+      'hiver': !input mode_hiver
+    }[saison_auto] }}
 
 action:
   - choose:
@@ -153,25 +188,4 @@ action:
               entity_id: !input climatiseurs
             data:
               temperature: temperature_cible
-      - conditions:
-          - condition: template
-            value_template: >
-              {{ (states(!input thermometres_exterieur) | float) - 7 > temperature_cible }}
-      - condition:
-          - condition: template
-            value_template: >
-              {{ !input.plage_semaine == jour_semaine_selection }}
-
-        sequence:
-          - service: climate.set_hvac_mode
-            target:
-              entity_id: !input climatiseurs
-            data:
-              hvac_mode: cool
-          - service: climate.set_temperature
-            target:
-              entity_id: !input climatiseurs
-            data:
-              temperature: >
-                {{ [(states(!input thermometres_exterieur) | float) - 7, !input temperature_max_preservation] | min }}
 mode: single
