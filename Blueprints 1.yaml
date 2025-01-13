@@ -19,7 +19,7 @@ blueprint:
           options:
             - semaine
             - week-end
-    thermometres_intérieur:
+    thermometres_interieur:
       name: Capteur de température (Intérieur)
       description: Capteur utilisé pour mesurer la température intérieure.
       selector:
@@ -37,6 +37,14 @@ blueprint:
       selector:
         entity:
           domain: climate
+    temperature_printemps:
+      name: Température cible (Printemps)
+      description: Température à maintenir pendant le printemps.
+      selector:
+        number:
+          min: 18
+          max: 26
+          step: 0.5
     mode_printemps:
       name: Mode Printemps
       description: Mode à utiliser pendant le printemps.
@@ -48,6 +56,16 @@ blueprint:
             - heat
             - dry
             - fan_only
+      default: 20
+    temperature_ete:
+      name: Température cible (Été)
+      description: Température à maintenir pendant l'été.
+      selector:
+        number:
+          min: 18
+          max: 26
+          step: 0.5
+      default: 21
     mode_ete:
       name: Mode Été
       description: Mode à utiliser pendant l'été.
@@ -59,6 +77,15 @@ blueprint:
             - heat
             - dry
             - fan_only
+    temperature_automne:
+      name: Température cible (Automne)
+      description: Température à maintenir pendant l'automne.
+      selector:
+        number:
+          min: 18
+          max: 26
+          step: 0.5
+      default: 20
     mode_automne:
       name: Mode Automne
       description: Mode à utiliser pendant l'automne.
@@ -70,6 +97,15 @@ blueprint:
             - heat
             - dry
             - fan_only
+    temperature_hiver:
+      name: Température cible (Hiver)
+      description: Température à maintenir pendant l'hiver.
+      selector:
+        number:
+          min: 18
+          max: 26
+          step: 0.5
+      default: 20
     mode_hiver:
       name: Mode Hiver
       description: Mode à utiliser pendant l'hiver.
@@ -81,42 +117,6 @@ blueprint:
             - heat
             - dry
             - fan_only
-    temperature_printemps:
-      name: Température cible (Printemps)
-      description: Température à maintenir pendant le printemps.
-      selector:
-        number:
-          min: 18
-          max: 26
-          step: 0.5
-      default: 20
-    temperature_ete:
-      name: Température cible (Été)
-      description: Température à maintenir pendant l'été.
-      selector:
-        number:
-          min: 18
-          max: 26
-          step: 0.5
-      default: 21
-    temperature_automne:
-      name: Température cible (Automne)
-      description: Température à maintenir pendant l'automne.
-      selector:
-        number:
-          min: 18
-          max: 26
-          step: 0.5
-      default: 20
-    temperature_hiver:
-      name: Température cible (Hiver)
-      description: Température à maintenir pendant l'hiver.
-      selector:
-        number:
-          min: 18
-          max: 26
-          step: 0.5
-      default: 20
     temperature_max_preservation:
       name: Température maximale de préservation
       description: La température maximale autorisée dans le mode préservation.
@@ -139,10 +139,10 @@ blueprint:
 trigger:
   # Déclenchement lorsque l'état du capteur de température intérieur change.
   - platform: state
-    entity_id: !input thermometres_intérieur
+    entity_id: !input thermometres_interieur
 
 variables:
-  temperature_max_preservation: !input temperature_max_preservation
+  temperature_max_preservation: !input.temperature_max_preservation
 
   is_weekend: >
     {{ now().weekday() >= 5 }}
@@ -165,24 +165,24 @@ variables:
 
   temperature_cible: >
     {{ {
-      'printemps': !input temperature_printemps,
-      'ete': !input temperature_ete,
-      'automne': !input temperature_automne,
-      'hiver': !input temperature_hiver
+      'printemps': !input.temperature_printemps,
+      'ete': !input.temperature_ete,
+      'automne': !input.temperature_automne,
+      'hiver': !input.temperature_hiver
     }[saison_auto] }}
 
   temperature_min: >
-    {{ temperature_cible - !input seuil_tolerance }}
+    {{ temperature_cible - !input.seuil_tolerance }}
 
   temperature_max: >
-    {{ temperature_cible + !input seuil_tolerance }}
+    {{ temperature_cible + !input.seuil_tolerance }}
 
   hvac_mode: >
     {{ {
-      'printemps': !input mode_printemps,
-      'ete': !input mode_ete,
-      'automne': !input mode_automne,
-      'hiver': !input mode_hiver
+      'printemps': !input.mode_printemps,
+      'ete': !input.mode_ete,
+      'automne': !input.mode_automne,
+      'hiver': !input.mode_hiver
     }[saison_auto] }}
 
 action:
@@ -192,10 +192,10 @@ action:
           - condition: or
             conditions:
               - condition: numeric_state
-                entity_id: !input.thermometres_intérieur
+                entity_id: !input.thermometres_interieur
                 below: "{{ temperature_min }}"
               - condition: numeric_state
-                entity_id: !input.thermometres_intérieur
+                entity_id: !input.thermometres_interieur
                 above: "{{ temperature_max }}"
         sequence:
           - service: climate.set_hvac_mode
