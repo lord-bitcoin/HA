@@ -137,15 +137,11 @@ blueprint:
       default: 0.5
 
 trigger:
-  # Déclenchement lorsque l'état du capteur de température intérieur change.
   - platform: state
     entity_id: !input thermometres_interieur
 
 variables:
-  variables:
-
   temperature_max_preservation: "{{ !input.temperature_max_preservation }}"
-  
   is_preservation_mode: >
     {{ (states(!input.thermometres_exterieur) | float) - 7 > temperature_cible }}
 
