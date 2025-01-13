@@ -184,11 +184,27 @@ action:
               entity_id: !input climatiseurs
             data:
               temperature: temperature_cible
+      - conditions:
+          - condition: template
+            value_template: >
+              {{ (states(!input thermometres_exterieur) | float) - 7 > temperature_cible }}
+      - condition:
+          - condition: template
+            value_template: >
+              {{ !input.plage_semaine == jour_semaine_selection }}
+
+        sequence:
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input climatiseurs
+            data:
+              hvac_mode: cool
           - service: climate.set_temperature
             target:
               entity_id: !input climatiseurs
             data:
               temperature: >
                 {{ [(states(!input thermometres_exterieur) | float) - 7, !input temperature_max_preservation] | min }}
+mode: single
 mode: single
 mode: single
