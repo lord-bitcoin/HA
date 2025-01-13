@@ -1,159 +1,192 @@
 blueprint:
-  name: Gestion Climatisation Automatique
-  description: Gère la climatisation avec des actions définies automatiquement selon la saison détectée.
+  name: Gestion automatisée des climatiseurs par saison et température
+  description: |
+    Automatise la gestion des climatiseurs selon la saison, les plages horaires, 
+    et les températures mesurées à l'intérieur et à l'extérieur.
   domain: automation
   input:
-    plage_horaire:
-      name: Plage Horaire
-      description: Jour ou Nuit.
-      selector:
-        select:
-          options:
-            - jour
-            - nuit
-    thermometres_intérieur:
-      name: Capteurs de température (Intérieur)
-      description: Capteur utilisé pour mesurer la température intérieure.
-      selector:
-        entity:
-          domain: sensor
-    thermometres_exterieur:
-      name: Capteurs de température (Extérieur)
-      description: Capteur utilisé pour mesurer la température extérieure.
-      selector:
-        entity:
-          domain: sensor
-    climatiseurs:
+    climatiseur:
       name: Climatiseur
       description: Entité du climatiseur à contrôler.
       selector:
         entity:
           domain: climate
+    temperature_interieur:
+      name: Capteur de température intérieure
+      description: Entité mesurant la température intérieure.
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+    temperature_exterieur:
+      name: Capteur de température extérieure
+      description: Entité mesurant la température extérieure.
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+    mode_printemps:
+      name: Mode de climatisation - Printemps
+      description: Mode de fonctionnement du climatiseur en printemps.
+      selector:
+        select:
+          options:
+            - heat
+            - cool
+            - auto
+    mode_ete:
+      name: Mode de climatisation - Été
+      description: Mode de fonctionnement du climatiseur en été.
+      selector:
+        select:
+          options:
+            - heat
+            - cool
+            - auto
+    mode_automne:
+      name: Mode de climatisation - Automne
+      description: Mode de fonctionnement du climatiseur en automne.
+      selector:
+        select:
+          options:
+            - heat
+            - cool
+            - auto
+    mode_hiver:
+      name: Mode de climatisation - Hiver
+      description: Mode de fonctionnement du climatiseur en hiver.
+      selector:
+        select:
+          options:
+            - heat
+            - cool
+            - auto
     temperature_printemps:
-      name: Température cible (Printemps)
-      description: Température à maintenir pendant le printemps.
+      name: Température cible - Printemps
+      description: Température à maintenir en printemps.
       selector:
         number:
-          min: 15
-          max: 30
-          step: 0.5
+          min: 18
+          max: 26
+          unit_of_measurement: °C
     temperature_ete:
-      name: Température cible (Été)
-      description: Température à maintenir pendant l'été.
+      name: Température cible - Été
+      description: Température à maintenir en été.
       selector:
         number:
-          min: 15
-          max: 30
-          step: 0.5
+          min: 18
+          max: 26
+          unit_of_measurement: °C
     temperature_automne:
-      name: Température cible (Automne)
-      description: Température à maintenir pendant l'automne.
+      name: Température cible - Automne
+      description: Température à maintenir en automne.
       selector:
         number:
-          min: 15
-          max: 30
-          step: 0.5
+          min: 18
+          max: 26
+          unit_of_measurement: °C
     temperature_hiver:
-      name: Température cible (Hiver)
-      description: Température à maintenir pendant l'hiver.
+      name: Température cible - Hiver
+      description: Température à maintenir en hiver.
       selector:
         number:
-          min: 15
-          max: 30
-          step: 0.5
+          min: 18
+          max: 26
+          unit_of_measurement: °C
     heure_debut_jour:
-      name: Heure début jour
-      description: Heure à laquelle commence la plage horaire jour.
+      name: Heure de début de la journée
+      description: Heure de début des plages horaires de jour.
       selector:
         time:
     heure_fin_jour:
-      name: Heure fin jour
-      description: Heure à laquelle se termine la plage horaire jour.
+      name: Heure de fin de la journée
+      description: Heure de fin des plages horaires de jour.
       selector:
         time:
     seuil_tolerance:
       name: Seuil de tolérance
-      description: Ajustement à appliquer autour de la température cible pour déclencher la climatisation.
+      description: Marge autour de la température cible pour ajuster la climatisation.
       selector:
         number:
           min: 0
-          max: 3
-          step: 0.5
+          max: 10
+          unit_of_measurement: °C
     temperature_max_preservation:
-      name: Température maximum pour le mode préservation
-      description: Température maximale cible lors du mode préservation.
+      name: Température max tolérée - Mode préservation
+      description: Température maximale à ne pas dépasser en mode préservation.
       selector:
         number:
-          min: 15
-          max: 30
-          step: 0.5
-
+          min: 10
+          max: 40
+          unit_of_measurement: °C
+mode: single
 trigger:
   - platform: state
-    entity_id: !input thermometres_intérieur
-
-variables:
-  current_date: "{{ now().date() }}"
-  saison_auto: >
-    {% if current_date >= now().replace(month=3, day=21).date() and current_date < now().replace(month=6, day=21).date() %}
-      'printemps'
-    {% elif current_date >= now().replace(month=6, day=21).date() and current_date < now().replace(month=9, day=21).date() %}
-      'ete'
-    {% elif current_date >= now().replace(month=9, day=21).date() and current_date < now().replace(month=12, day=21).date() %}
-      'automne'
-    {% else %}
-      'hiver'
-    {% endif %}
-  temperature_cible: >
-    {{ {
-      'printemps': !input temperature_printemps,
-      'ete': !input temperature_ete,
-      'automne': !input temperature_automne,
-      'hiver': !input temperature_hiver
-    }[saison_auto] }}
-  temperature_min: >
-    {{ temperature_cible - !input seuil_tolerance }}
-  temperature_max: >
-    {{ temperature_cible + !input seuil_tolerance }}
-  hvac_mode: >
-    {{ 'cool' if saison_auto in ['printemps', 'ete'] else 'heat' }}
-
+    entity_id: !input temperature_interieur
+condition: []
 action:
+  - variables:
+      date_actuelle: '{{ now() }}'
+      saison: >-
+        {% set mois = date_actuelle.month %}
+        {% set jour = date_actuelle.day %}
+        {% if (mois == 12 and jour >= 21) or (mois == 1) or (mois == 2) or (mois == 3 and jour < 20) %} hiver
+        {% elif (mois == 3 and jour >= 20) or (mois == 4) or (mois == 5) or (mois == 6 and jour < 21) %} printemps
+        {% elif (mois == 6 and jour >= 21) or (mois == 7) or (mois == 8) or (mois == 9 and jour < 23) %} ete
+        {% else %} automne
+        {% endif %}
+      mode_actuel: >-
+        {% if saison == 'printemps' %} {{ input_mode_printemps }}
+        {% elif saison == 'ete' %} {{ input_mode_ete }}
+        {% elif saison == 'automne' %} {{ input_mode_automne }}
+        {% else %} {{ input_mode_hiver }}
+        {% endif %}
+      temperature_cible: >-
+        {% if saison == 'printemps' %} {{ input_temperature_printemps }}
+        {% elif saison == 'ete' %} {{ input_temperature_ete }}
+        {% elif saison == 'automne' %} {{ input_temperature_automne }}
+        {% else %} {{ input_temperature_hiver }}
+        {% endif %}
+      temperature_min: '{{ temperature_cible - seuil_tolerance }}'
+      temperature_max: '{{ temperature_cible + seuil_tolerance }}'
+      temperature_interieur: '{{ states(input_temperature_interieur) | float }}'
+      temperature_exterieur: '{{ states(input_temperature_exterieur) | float }}'
   - choose:
       - conditions:
-          - condition: or
-            conditions:
-              - condition: numeric_state
-                entity_id: !input thermometres_intérieur
-                below: temperature_min
-              - condition: numeric_state
-                entity_id: !input thermometres_intérieur
-                above: temperature_max
+          - condition: template
+            value_template: '{{ temperature_interieur > temperature_max }}'
         sequence:
           - service: climate.set_hvac_mode
-            target:
-              entity_id: !input climatiseurs
             data:
-              hvac_mode: "{{ hvac_mode }}"
+              entity_id: !input climatiseur
+              hvac_mode: '{{ mode_actuel }}'
           - service: climate.set_temperature
-            target:
-              entity_id: !input climatiseurs
             data:
-              temperature: temperature_cible
+              entity_id: !input climatiseur
+              temperature: '{{ temperature_cible }}'
       - conditions:
           - condition: template
-            value_template: >
-              {{ (states(!input thermometres_exterieur) | float) - 7 > temperature_cible }}
+            value_template: '{{ temperature_interieur < temperature_min }}'
         sequence:
           - service: climate.set_hvac_mode
-            target:
-              entity_id: !input climatiseurs
             data:
+              entity_id: !input climatiseur
+              hvac_mode: '{{ mode_actuel }}'
+          - service: climate.set_temperature
+            data:
+              entity_id: !input climatiseur
+              temperature: '{{ temperature_cible }}'
+      - conditions:
+          - condition: template
+            value_template: >-
+              {{ temperature_exterieur > temperature_cible + 7 }}
+        sequence:
+          - service: climate.set_hvac_mode
+            data:
+              entity_id: !input climatiseur
               hvac_mode: cool
           - service: climate.set_temperature
-            target:
-              entity_id: !input climatiseurs
             data:
-              temperature: >
-                {{ [(states(!input thermometres_exterieur) | float) - 7, !input temperature_max_preservation] | min }}
-mode: single
+              entity_id: !input climatiseur
+              temperature: >-
+                {{ [temperature_exterieur - 7, temperature_max_preservation] | min }}
