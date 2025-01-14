@@ -1,0 +1,60 @@
+script:
+  mode_vacances:
+    alias: "Mode Vacances"
+    sequence:
+      - choose:
+          # --- CAS 1 : ACTIVATION DU MODE VACANCES ---
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.mode_vacances  # Ou input_button si vous gérez l'état autrement
+                state: "on"
+            sequence:
+              # 1. Désactiver les automatisations liées aux climatiseurs
+              - service: automation.turn_off
+                data:
+                  entity_id:
+                    - automation.automatisation_clim_1
+                    - automation.automatisation_clim_2
+                    # Ajoutez ici toutes les automatisations qui pilotent vos climatiseurs
+
+              # 2. Vérifier que la température est ≤ 10°C
+              - condition: numeric_state
+                entity_id: sensor.thermometre_salon
+                below: 10
+
+              # 3. Passer en mode chauffage à 17°C
+              - service: climate.set_hvac_mode
+                data:
+                  entity_id:
+                    - climate.clim_salon
+                    - climate.clim_chambre
+                    # Ajoutez ici toutes vos entités climatiseurs
+                  hvac_mode: "heat"
+
+              - service: climate.set_temperature
+                data:
+                  entity_id:
+                    - climate.clim_salon
+                    - climate.clim_chambre
+                  temperature: 17
+
+          # --- CAS 2 : DÉSACTIVATION DU MODE VACANCES ---
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.mode_vacances
+                state: "off"
+            sequence:
+              # 1. Réactiver les automatisations liées aux climatiseurs
+              - service: automation.turn_on
+                data:
+                  entity_id:
+                    - automation.automatisation_clim_1
+                    - automation.automatisation_clim_2
+
+              # 2. Éteindre les climatiseurs (ou autre action de retour à la normale)
+              - service: climate.turn_off
+                data:
+                  entity_id:
+                    - climate.clim_salon
+                    - climate.clim_chambre
+      default: []
