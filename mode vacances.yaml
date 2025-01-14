@@ -6,7 +6,7 @@ script:
           # --- CAS 1 : ACTIVATION DU MODE VACANCES ---
           - conditions:
               - condition: state
-                entity_id: input_boolean.mode_vacances  # Ou input_button si vous gérez l'état autrement
+                entity_id: input_boolean.mode_vacances
                 state: "on"
             sequence:
               # 1. Désactiver les automatisations liées aux climatiseurs
@@ -15,7 +15,7 @@ script:
                   entity_id:
                     - automation.automatisation_clim_1
                     - automation.automatisation_clim_2
-                    # Ajoutez ici toutes les automatisations qui pilotent vos climatiseurs
+                    # Ajoutez ici toutes vos automatisations qui pilotent les climatiseurs
 
               # 2. Vérifier que la température est ≤ 10°C
               - condition: numeric_state
@@ -28,7 +28,6 @@ script:
                   entity_id:
                     - climate.clim_salon
                     - climate.clim_chambre
-                    # Ajoutez ici toutes vos entités climatiseurs
                   hvac_mode: "heat"
 
               - service: climate.set_temperature
@@ -57,4 +56,4 @@ script:
                   entity_id:
                     - climate.clim_salon
                     - climate.clim_chambre
-      default: []
+        default: []
