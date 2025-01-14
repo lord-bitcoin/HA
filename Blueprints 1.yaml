@@ -1,15 +1,21 @@
 blueprint:
-  name: Gestion automatisée des climatiseurs Gree/Heiwa
-  description: |
-    Automatise la gestion des climatiseurs selon la saison, en semaine ou en week-end, les plages horaires, et les températures cibles et seuils définits. Active également un mode humide si l'humidité mesurée sort des seuils définis. Permet de configurer un comportement spécifique pour la semaine ou le week-end.
+  name: Gestion automatisée des climatiseurs par saison et température
+  description: >
+    Automatise la gestion des climatiseurs selon la saison, les plages horaires, 
+    et les températures mesurées à l'intérieur et à l'extérieur.
+    Active également un mode humide si l'humidité mesurée sort des seuils définis.
+    Permet de configurer un comportement spécifique pour la semaine ou le week-end.
   domain: automation
+
   input:
+    # -- ENTITÉS ET CAPTEURS --
     climatiseur:
       name: Climatiseur
       description: Entité du climatiseur à contrôler.
       selector:
         entity:
           domain: climate
+
     temperature_interieur:
       name: Capteur de température intérieure
       description: Entité mesurant la température intérieure.
@@ -17,6 +23,7 @@ blueprint:
         entity:
           domain: sensor
           device_class: temperature
+
     temperature_exterieur:
       name: Capteur de température extérieure
       description: Entité mesurant la température extérieure.
@@ -24,6 +31,7 @@ blueprint:
         entity:
           domain: sensor
           device_class: temperature
+
     humidite_interieur:
       name: Capteur d'humidité intérieure
       description: Entité mesurant l'humidité intérieure.
@@ -31,15 +39,18 @@ blueprint:
         entity:
           domain: sensor
           device_class: humidity
+
+    # -- MODES DE CLIMATISATION PAR SAISON --
     mode_printemps:
       name: Mode de climatisation - Printemps
-      description: Mode de fonctionnement du climatiseur en printemps.
+      description: Mode de fonctionnement du climatiseur au printemps.
       selector:
         select:
           options:
             - heat
             - cool
             - auto
+
     mode_ete:
       name: Mode de climatisation - Été
       description: Mode de fonctionnement du climatiseur en été.
@@ -49,6 +60,7 @@ blueprint:
             - heat
             - cool
             - auto
+
     mode_automne:
       name: Mode de climatisation - Automne
       description: Mode de fonctionnement du climatiseur en automne.
@@ -58,6 +70,7 @@ blueprint:
             - heat
             - cool
             - auto
+
     mode_hiver:
       name: Mode de climatisation - Hiver
       description: Mode de fonctionnement du climatiseur en hiver.
@@ -67,15 +80,18 @@ blueprint:
             - heat
             - cool
             - auto
+
+    # -- TEMPÉRATURES CIBLES PAR SAISON --
     temperature_printemps:
       name: Température cible - Printemps
-      description: Température à maintenir en printemps.
+      description: Température à maintenir au printemps.
       selector:
         number:
           min: 18
           max: 26
           step: 0.5
           unit_of_measurement: °C
+
     temperature_ete:
       name: Température cible - Été
       description: Température à maintenir en été.
@@ -85,6 +101,7 @@ blueprint:
           max: 26
           step: 0.5
           unit_of_measurement: °C
+
     temperature_automne:
       name: Température cible - Automne
       description: Température à maintenir en automne.
@@ -94,6 +111,7 @@ blueprint:
           max: 26
           step: 0.5
           unit_of_measurement: °C
+
     temperature_hiver:
       name: Température cible - Hiver
       description: Température à maintenir en hiver.
@@ -103,16 +121,21 @@ blueprint:
           max: 26
           step: 0.5
           unit_of_measurement: °C
+
+    # -- PLAGES HORAIRES (non exploitées dans l’exemple, mais prévues dans le blueprint) --
     heure_debut_jour:
       name: Heure de début de la journée
       description: Heure de début des plages horaires de jour.
       selector:
         time:
+
     heure_fin_jour:
       name: Heure de fin de la journée
       description: Heure de fin des plages horaires de jour.
       selector:
         time:
+
+    # -- PARAMÈTRES DIVERS --
     seuil_tolerance:
       name: Seuil de tolérance
       description: Marge autour de la température cible pour ajuster la climatisation.
@@ -122,6 +145,7 @@ blueprint:
           max: 3
           step: 0.5
           unit_of_measurement: °C
+
     temperature_max_preservation:
       name: Température max tolérée - Mode préservation
       description: Température maximale à ne pas dépasser en mode préservation.
@@ -131,6 +155,7 @@ blueprint:
           max: 30
           step: 0.5
           unit_of_measurement: °C
+
     humidite_min:
       name: Humidité minimale
       description: Seuil d'humidité minimal avant d'activer le mode humide.
@@ -140,6 +165,7 @@ blueprint:
           max: 50
           step: 2.5
           unit_of_measurement: "%"
+
     humidite_max:
       name: Humidité maximale
       description: Seuil d'humidité maximal avant d'activer le mode humide.
@@ -149,125 +175,200 @@ blueprint:
           max: 70
           step: 2.5
           unit_of_measurement: "%"
+
     mode_semaine_weekend:
       name: Mode semaine ou week-end
-      description: Applique des réglages spécifiques pour la semaine ou le week-end.
+      description: Applique des réglages spécifiques pour la semaine (lundi-vendredi) ou le week-end (samedi-dimanche).
       selector:
         select:
           options:
             - semaine
             - weekend
+
 mode: single
+
+#
+# DÉCLENCHEURS
+#
 trigger:
+  # Dès que la température intérieure change
   - platform: state
     entity_id: !input temperature_interieur
+
+  # Dès que l'humidité intérieure change
   - platform: state
     entity_id: !input humidite_interieur
+
+  # Toutes les 5 minutes (pour surveiller température ext/int en continu)
   - platform: time_pattern
     minutes: "/5"
+
+#
+# CONDITIONS
+#
 condition:
+  # Condition : n'exécuter que si le mode correspond au jour de la semaine / week-end
   - condition: template
     value_template: >-
-      {% if is_state('input_mode_semaine_weekend', 'semaine') %}
-        {{ now().weekday() in [0, 1, 2, 3, 4] }}
+      {% if !input mode_semaine_weekend == 'semaine' %}
+        {{ now().weekday() in [0,1,2,3,4] }}
       {% else %}
-        {{ now().weekday() in [5, 6] }}
+        {{ now().weekday() in [5,6] }}
       {% endif %}
+
+#
+# ACTIONS
+#
 action:
   - variables:
-      date_actuelle: '{{ now() }}'
+      # Date/heure actuelle
+      date_actuelle: "{{ now() }}"
+      
+      # Détermination de la saison (approximative)
       saison: >-
         {% set mois = date_actuelle.month %}
         {% set jour = date_actuelle.day %}
-        {% if (mois == 12 and jour >= 21) or (mois == 1) or (mois == 2) or (mois == 3 and jour < 20) %} hiver
-        {% elif (mois == 3 and jour >= 20) or (mois == 4) or (mois == 5) or (mois == 6 and jour < 21) %} printemps
-        {% elif (mois == 6 and jour >= 21) or (mois == 7) or (mois == 8) or (mois == 9 and jour < 23) %} ete
-        {% else %} automne
+        
+        {% if (mois == 12 and jour >= 21) or (mois in [1,2]) or (mois == 3 and jour < 20) %}
+          hiver
+        {% elif (mois == 3 and jour >= 20) or (mois in [4,5]) or (mois == 6 and jour < 21) %}
+          printemps
+        {% elif (mois == 6 and jour >= 21) or (mois in [7,8]) or (mois == 9 and jour < 23) %}
+          ete
+        {% else %}
+          automne
         {% endif %}
+      
+      # Sélection du mode de clim en fonction de la saison
       mode_actuel: >-
-        {% if saison == 'printemps' %} {{ input_mode_printemps }}
-        {% elif saison == 'ete' %} {{ input_mode_ete }}
-        {% elif saison == 'automne' %} {{ input_mode_automne }}
-        {% else %} {{ input_mode_hiver }}
+        {% if saison == 'printemps' %}
+          {{ !input mode_printemps }}
+        {% elif saison == 'ete' %}
+          {{ !input mode_ete }}
+        {% elif saison == 'automne' %}
+          {{ !input mode_automne }}
+        {% else %}
+          {{ !input mode_hiver }}
         {% endif %}
+
+      # Sélection de la température cible selon la saison
       temperature_cible: >-
-        {% if saison == 'printemps' %} {{ input_temperature_printemps }}
-        {% elif saison == 'ete' %} {{ input_temperature_ete }}
-        {% elif saison == 'automne' %} {{ input_temperature_automne }}
-        {% else %} {{ input_temperature_hiver }}
+        {% if saison == 'printemps' %}
+          {{ !input temperature_printemps }}
+        {% elif saison == 'ete' %}
+          {{ !input temperature_ete }}
+        {% elif saison == 'automne' %}
+          {{ !input temperature_automne }}
+        {% else %}
+          {{ !input temperature_hiver }}
         {% endif %}
-      temperature_min: '{{ temperature_cible - seuil_tolerance }}'
-      temperature_max: '{{ temperature_cible + seuil_tolerance }}'
-      temperature_interieur: '{{ states(input_temperature_interieur) | float }}'
-      temperature_exterieur: '{{ states(input_temperature_exterieur) | float }}'
-      humidite_interieur: '{{ states(input_humidite_interieur) | float }}'
+
+      # Récupération de la température intérieure/extérieure et de l'humidité intérieure en float
+      temperature_interieure: "{{ states(!input temperature_interieur) | float }}"
+      temperature_exterieure: "{{ states(!input temperature_exterieur) | float }}"
+      humidite_interieure: "{{ states(!input humidite_interieur) | float }}"
+
+      # Calcul des seuils min/max autour de la température cible
+      temperature_min: >-
+        {{ temperature_cible | float - (!input seuil_tolerance | float) }}
+      temperature_max: >-
+        {{ temperature_cible | float + (!input seuil_tolerance | float) }}
+
   - choose:
+      #
+      # 1. Si la température intérieure > temperature_max => on climatise (mode_actuel)
+      #
       - conditions:
           - condition: template
-            value_template: '{{ temperature_interieur > temperature_max }}'
+            value_template: "{{ temperature_interieure > temperature_max | float }}"
         sequence:
           - service: climate.set_hvac_mode
             data:
               entity_id: !input climatiseur
-              hvac_mode: '{{ mode_actuel }}'
+              hvac_mode: "{{ mode_actuel }}"
           - service: climate.set_temperature
             data:
               entity_id: !input climatiseur
-              temperature: '{{ temperature_cible }}'
+              temperature: "{{ temperature_cible | float }}"
+
+      #
+      # 2. Si la température intérieure < temperature_min => on chauffe (mode_actuel)
+      #
       - conditions:
           - condition: template
-            value_template: '{{ temperature_interieur < temperature_min }}'
+            value_template: "{{ temperature_interieure < temperature_min | float }}"
         sequence:
           - service: climate.set_hvac_mode
             data:
               entity_id: !input climatiseur
-              hvac_mode: '{{ mode_actuel }}'
+              hvac_mode: "{{ mode_actuel }}"
           - service: climate.set_temperature
             data:
               entity_id: !input climatiseur
-              temperature: '{{ temperature_cible }}'
+              temperature: "{{ temperature_cible | float }}"
+
+      #
+      # 3. Si la température extérieure est > (température_cible + 7) => mode "cool" préservation
+      #
       - conditions:
           - condition: template
             value_template: >-
-              {{ temperature_exterieur > temperature_cible + 7 }}
+              {{ temperature_exterieure > (temperature_cible | float + 7) }}
         sequence:
           - service: climate.set_hvac_mode
             data:
               entity_id: !input climatiseur
-              hvac_mode: cool
+              hvac_mode: "cool"
           - service: climate.set_temperature
             data:
               entity_id: !input climatiseur
-              temperature: >-
-                {{ [temperature_exterieur - 7, temperature_max_preservation] | min }}
+              temperature: >
+                {{ [ (temperature_exterieure | float - 7), (!input temperature_max_preservation | float) ] | min }}
+
+      #
+      # 4. Si l'humidité intérieure est < humidite_min => mode "dry" (déshumidification)
+      #
       - conditions:
           - condition: template
-            value_template: >-
-              {{ humidite_interieur < input_humidite_min }}
+            value_template: "{{ humidite_interieure < (!input humidite_min | float) }}"
         sequence:
           - service: climate.set_hvac_mode
             data:
               entity_id: !input climatiseur
-              hvac_mode: dry
+              hvac_mode: "dry"
+
+      #
+      # 5. Si l'humidité intérieure est > humidite_max => mode "dry"
+      #
       - conditions:
           - condition: template
-            value_template: >-
-              {{ humidite_interieur > input_humidite_max }}
+            value_template: "{{ humidite_interieure > (!input humidite_max | float) }}"
         sequence:
           - service: climate.set_hvac_mode
             data:
               entity_id: !input climatiseur
-              hvac_mode: dry
+              hvac_mode: "dry"
+
+      #
+      # 6. Si on est dans la plage de confort (humidité OK et température OK)
+      #    => on s'assure de revenir en mode_actuel + température_cible
+      #
       - conditions:
           - condition: template
             value_template: >-
-              {{ (input_humidite_min + 2.5) <= humidite_interieur <= (input_humidite_max - 2.5) and temperature_min <= temperature_interieur <= temperature_max }}
+              {{ 
+                 (humidite_interieure >= (!input humidite_min | float) + 2.5)
+                 and (humidite_interieure <= (!input humidite_max | float) - 2.5)
+                 and (temperature_interieure >= temperature_min | float)
+                 and (temperature_interieure <= temperature_max | float)
+              }}
         sequence:
           - service: climate.set_hvac_mode
             data:
               entity_id: !input climatiseur
-              hvac_mode: '{{ mode_actuel }}'
+              hvac_mode: "{{ mode_actuel }}"
           - service: climate.set_temperature
             data:
               entity_id: !input climatiseur
-              temperature: '{{ temperature_cible }}'
+              temperature: "{{ temperature_cible | float }}"
+
