@@ -2,7 +2,6 @@ blueprint:
   name: Gestion Automatique de Climatisation
   description: Gestion intelligente de la climatisation selon la saison et les horaires
   domain: automation
-  source_url: https://github.com/lord-bitcoin/HA/edit/main/gestion_automatis%C3%A9_compl%C3%A8te_v2
   input:
     climate_entity:
       name: Climatiseur
@@ -44,8 +43,6 @@ blueprint:
           step: 0.5
           unit_of_measurement: "°C"
       default: 30
-
-    # Configuration Printemps
     spring_mode:
       name: Mode Climatisation (Printemps)
       selector:
@@ -62,7 +59,6 @@ blueprint:
           min: 18
           max: 30
           step: 0.5
-          unit_of_measurement: "°C"
       default: 23
     spring_night_temp:
       name: Température Nuit (Printemps)
@@ -71,102 +67,60 @@ blueprint:
           min: 16
           max: 28
           step: 0.5
-          unit_of_measurement: "°C"
       default: 20
     spring_weekday_start:
       name: Début Journée Semaine (Printemps)
       selector:
         time: {}
-      default: "07:00:00"
+      default: "07:00"
     spring_weekday_end:
       name: Fin Journée Semaine (Printemps)
       selector:
         time: {}
-      default: "22:00:00"
-    spring_weekend_start:
-      name: Début Journée Weekend (Printemps)
-      selector:
-        time: {}
-      default: "08:00:00"
-    spring_weekend_end:
-      name: Fin Journée Weekend (Printemps)
-      selector:
-        time: {}
-      default: "23:00:00"
+      default: "22:00"
 
 trigger:
   - platform: state
     entity_id: !input "indoor_temp_sensor"
   - platform: time_pattern
     minutes: "/5"
-  - platform: state
-    entity_id: !input "climate_entity"
-
-variables:
-  current_season: |
-    {% set month = now().month %}
-    {% set day = now().day %}
-    {% if (month == 3 and day >= 20) or month == 4 or month == 5 or (month == 6 and day < 21) %}
-      spring
-    {% elif (month == 6 and day >= 21) or month == 7 or month == 8 or (month == 9 and day < 23) %}
-      summer
-    {% elif (month == 9 and day >= 23) or month == 10 or month == 11 or (month == 12 and day < 21) %}
-      autumn
-    {% else %}
-      winter
-    {% endif %}
-  
-  is_weekend: |
-    {% set weekday = now().isoweekday() %}
-    {{ weekday >= 6 and states('input_boolean.weekend_mode') == 'on' }}
-
-  current_period: |
-    {% set current_time = now().strftime("%H:%M:%S") %}
-    {% if is_weekend %}
-      {% set start_time = states('input_datetime.spring_weekend_start') %}
-      {% set end_time = states('input_datetime.spring_weekend_end') %}
-    {% else %}
-      {% set start_time = states('input_datetime.spring_weekday_start') %}
-      {% set end_time = states('input_datetime.spring_weekday_end') %}
-    {% endif %}
-    {{ 'day' if current_time >= start_time and current_time <= end_time else 'night' }}
 
 condition:
-  - condition: template
-    value_template: |
-      {% set target_temp = states('input_number.spring_day_temp') | float %}
-      {% set current_temp = states('sensor.indoor_temperature') | float %}
-      {% set threshold = states('input_number.tolerance_threshold') | float %}
-      {{ (current_temp - target_temp) | abs > threshold }}
+  condition: template
+  value_template: >-
+    {% set current_temp = states(indoor_temp_sensor) | float %}
+    {% set target_temp = states(spring_day_temp) | float %}
+    {% set threshold = states(tolerance_threshold) | float %}
+    {{ (current_temp - target_temp) | abs > threshold }}
 
 action:
   - variables:
-      hvac_mode: |
-        {% if current_season == 'spring' %}
+      hvac_mode: >-
+        {% set month = now().month %}
+        {% set day = now().day %}
+        {% if (month == 3 and day >= 20) or month == 4 or month == 5 %}
           {{ states('input_select.spring_mode') }}
-        {% elif current_season == 'summer' %}
-          cool
-        {% elif current_season == 'winter' %}
-          heat
+        {% elif month == 6 or month == 7 or month == 8 %}
+          'cool'
+        {% elif month == 12 or month == 1 or month == 2 %}
+          'heat'
         {% else %}
-          auto
+          'auto'
         {% endif %}
       
-      target_temp: |
-        {% if current_period == 'day' %}
+      target_temp: >-
+        {% set hour = now().hour %}
+        {% if hour >= 7 and hour < 22 %}
           {{ states('input_number.spring_day_temp') }}
         {% else %}
           {{ states('input_number.spring_night_temp') }}
         {% endif %}
 
   - choose:
-      # Mode Préservation
       - conditions:
           - condition: template
-            value_template: |
-              {% set current_temp = states('sensor.indoor_temperature') | float %}
-              {% set max_temp = states('input_number.max_preservation_temp') | float %}
-              {{ current_temp > max_temp }}
+            value_template: >-
+              {{ states(indoor_temp_sensor) | float > states(max_preservation_temp) | float }}
         sequence:
           - service: climate.set_hvac_mode
             target:
@@ -177,29 +131,7 @@ action:
             target:
               entity_id: !input "climate_entity"
             data:
-              temperature: "{{ states('input_number.max_preservation_temp') | float }}"
-
-      # Mode Régulation
-      - conditions:
-          - condition: template
-            value_template: |
-              {% set current_temp = states('sensor.indoor_temperature') | float %}
-              {% set target = states('input_number.spring_day_temp') | float %}
-              {% set threshold = states('input_number.tolerance_threshold') | float %}
-              {{ current_temp > target + threshold or current_temp < target - threshold }}
-        sequence:
-          - service: climate.set_hvac_mode
-            target:
-              entity_id: !input "climate_entity"
-            data:
-              hvac_mode: "{{ hvac_mode }}"
-          - service: climate.set_temperature
-            target:
-              entity_id: !input "climate_entity"
-            data:
-              temperature: "{{ target_temp }}"
-
-    # Mode Naturel (default)
+              temperature: "{{ states('input_number.max_preservation_temp') }}"
     default:
       - service: climate.turn_off
         target:
@@ -207,8 +139,6 @@ action:
 
   - service: logbook.log
     data:
-      name: "Climatisation"
-      message: |
-        Mode: {{ hvac_mode }}, 
-        Temp. Cible: {{ target_temp }}°C, 
-        Temp. Actuelle: {{ states('sensor.indoor_temperature') }}°C
+      name: Climatisation
+      message: >-
+        Mode: {{ states(climate_entity) }}, Temp. Cible: {{ target_temp }}°C
