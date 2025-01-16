@@ -15,10 +15,23 @@ blueprint:
         entity:
           domain: sensor
           device_class: temperature
+
+    # Configuration horaires
+    day_start:
+      name: "Début de journée"
+      selector:
+        time: {}
+      default: "07:00:00"
+    
+    day_end:
+      name: "Fin de journée"
+      selector:
+        time: {}
+      default: "22:00:00"
     
     # Configuration Printemps
-    spring_target_temp:
-      name: "Température cible (Printemps)"
+    spring_day_temp:
+      name: "Température jour (Printemps)"
       selector:
         number:
           min: 18
@@ -26,6 +39,16 @@ blueprint:
           step: 0.5
           unit_of_measurement: °C
       default: 19
+
+    spring_night_temp:
+      name: "Température nuit (Printemps)"
+      selector:
+        number:
+          min: 16
+          max: 22
+          step: 0.5
+          unit_of_measurement: °C
+      default: 17
     
     spring_mode:
       name: "Mode climatisation (Printemps)"
@@ -38,8 +61,8 @@ blueprint:
       default: auto
 
     # Configuration Été
-    summer_target_temp:
-      name: "Température cible (Été)"
+    summer_day_temp:
+      name: "Température jour (Été)"
       selector:
         number:
           min: 18
@@ -47,6 +70,16 @@ blueprint:
           step: 0.5
           unit_of_measurement: °C
       default: 21
+
+    summer_night_temp:
+      name: "Température nuit (Été)"
+      selector:
+        number:
+          min: 16
+          max: 22
+          step: 0.5
+          unit_of_measurement: °C
+      default: 19
     
     summer_mode:
       name: "Mode climatisation (Été)"
@@ -59,8 +92,8 @@ blueprint:
       default: cool
 
     # Configuration Automne
-    autumn_target_temp:
-      name: "Température cible (Automne)"
+    autumn_day_temp:
+      name: "Température jour (Automne)"
       selector:
         number:
           min: 18
@@ -68,6 +101,16 @@ blueprint:
           step: 0.5
           unit_of_measurement: °C
       default: 19
+
+    autumn_night_temp:
+      name: "Température nuit (Automne)"
+      selector:
+        number:
+          min: 16
+          max: 22
+          step: 0.5
+          unit_of_measurement: °C
+      default: 18
     
     autumn_mode:
       name: "Mode climatisation (Automne)"
@@ -80,8 +123,8 @@ blueprint:
       default: auto
 
     # Configuration Hiver
-    winter_target_temp:
-      name: "Température cible (Hiver)"
+    winter_day_temp:
+      name: "Température jour (Hiver)"
       selector:
         number:
           min: 18
@@ -89,6 +132,16 @@ blueprint:
           step: 0.5
           unit_of_measurement: °C
       default: 19
+
+    winter_night_temp:
+      name: "Température nuit (Hiver)"
+      selector:
+        number:
+          min: 16
+          max: 22
+          step: 0.5
+          unit_of_measurement: °C
+      default: 18
     
     winter_mode:
       name: "Mode climatisation (Hiver)"
@@ -130,15 +183,34 @@ variables:
       winter
     {% endif %}
 
+  is_daytime: >
+    {% set current_time = now().strftime("%H:%M:%S") %}
+    {% set day_start = states('input_datetime.day_start') %}
+    {% set day_end = states('input_datetime.day_end') %}
+    {{ current_time >= day_start and current_time <= day_end }}
+
   target_temp: >
-    {% if current_season == "spring" %}
-      {{ states(spring_target_temp) }}
-    {% elif current_season == "summer" %}
-      {{ states(summer_target_temp) }}
-    {% elif current_season == "autumn" %}
-      {{ states(autumn_target_temp) }}
+    {% set season = current_season %}
+    {% if is_daytime %}
+      {% if season == "spring" %}
+        {{ states(spring_day_temp) }}
+      {% elif season == "summer" %}
+        {{ states(summer_day_temp) }}
+      {% elif season == "autumn" %}
+        {{ states(autumn_day_temp) }}
+      {% else %}
+        {{ states(winter_day_temp) }}
+      {% endif %}
     {% else %}
-      {{ states(winter_target_temp) }}
+      {% if season == "spring" %}
+        {{ states(spring_night_temp) }}
+      {% elif season == "summer" %}
+        {{ states(summer_night_temp) }}
+      {% elif season == "autumn" %}
+        {{ states(autumn_night_temp) }}
+      {% else %}
+        {{ states(winter_night_temp) }}
+      {% endif %}
     {% endif %}
 
   current_mode: >
@@ -188,4 +260,4 @@ action:
   - service: logbook.log
     data:
       name: "Climatisation"
-      message: "Mode: {{ current_mode }}, Saison: {{ current_season }}, Température cible: {{ target_temp }}°C"
+      message: "Mode: {{ current_mode }}, Saison: {{ current_season }}, Période: {{ 'Jour' if is_daytime else 'Nuit' }}, Température cible: {{ target_temp }}°C"
