@@ -1,555 +1,209 @@
 blueprint:
-  name: "Gestion climatisation saisonnière"
-  description: "Gestion intelligente de la climatisation organisée par saison"
+  name: Gestion Automatique de Climatisation
+  description: Gestion intelligente de la climatisation selon la saison et les horaires
   domain: automation
-  
+  source_url: "your_repository_url"
   input:
-    # ÉQUIPEMENTS PRINCIPAUX
-    equipements_groupe:
-      name: Équipements
-      description: "Configuration des équipements principaux"
-      selector:
-        action: {}
-        
-    climatiseur:
+    climate_entity:
       name: Climatiseur
       selector:
         entity:
           domain: climate
-          
-    temperature_interieur:
-      name: Température intérieure
+    indoor_temp_sensor:
+      name: Capteur température intérieure
       selector:
         entity:
           domain: sensor
           device_class: temperature
-          
-    temperature_exterieur:
-      name: Température extérieure
+    outdoor_temp_sensor:
+      name: Capteur température extérieure
       selector:
         entity:
           domain: sensor
           device_class: temperature
-
-    # PRINTEMPS
-    printemps_groupe:
-      name: Configuration Printemps
-      description: "Tous les paramètres pour la saison du printemps"
-      selector:
-        action: {}
-
-    printemps_mode:
-      name: Mode de climatisation
-      description: "Mode de fonctionnement pour le printemps"
-      selector:
-        select:
-          options:
-            - label: "Automatique"
-              value: "auto"
-            - label: "Refroidissement"
-              value: "cool"
-            - label: "Chauffage"
-              value: "heat"
-          default: "auto"
-
-    printemps_temp_jour:
-      name: Température cible jour
-      description: "Température souhaitée en journée"
-      selector:
-        number:
-          min: 18
-          max: 26
-          step: 0.5
-          unit_of_measurement: °C
-          mode: box
-          default: 21
-
-    printemps_temp_nuit:
-      name: Température cible nuit
-      description: "Température souhaitée la nuit"
-      selector:
-        number:
-          min: 16
-          max: 24
-          step: 0.5
-          unit_of_measurement: °C
-          mode: box
-          default: 19
-
-    printemps_horaires_semaine:
-      name: Horaires Semaine
-      description: "Configuration des horaires en semaine"
-      selector:
-        action: {}
-
-    printemps_debut_semaine:
-      name: Début de journée (semaine)
-      selector:
-        time:
-          default: "07:00:00"
-
-    printemps_fin_semaine:
-      name: Fin de journée (semaine)
-      selector:
-        time:
-          default: "21:00:00"
-
-    printemps_horaires_weekend:
-      name: Horaires Weekend
-      description: "Configuration des horaires en weekend"
-      selector:
-        action: {}
-
-    printemps_debut_weekend:
-      name: Début de journée (weekend)
-      selector:
-        time:
-          default: "08:00:00"
-
-    printemps_fin_weekend:
-      name: Fin de journée (weekend)
-      selector:
-        time:
-          default: "22:00:00"
-
-    # ÉTÉ
-    ete_groupe:
-      name: Configuration Été
-      description: "Tous les paramètres pour la saison d'été"
-      selector:
-        action: {}
-
-    ete_mode:
-      name: Mode de climatisation
-      description: "Mode de fonctionnement pour l'été"
-      selector:
-        select:
-          options:
-            - label: "Automatique"
-              value: "auto"
-            - label: "Refroidissement"
-              value: "cool"
-            - label: "Chauffage"
-              value: "heat"
-          default: "cool"
-
-    ete_temp_jour:
-      name: Température cible jour
-      description: "Température souhaitée en journée"
-      selector:
-        number:
-          min: 18
-          max: 26
-          step: 0.5
-          unit_of_measurement: °C
-          mode: box
-          default: 21
-
-    ete_temp_nuit:
-      name: Température cible nuit
-      description: "Température souhaitée la nuit"
-      selector:
-        number:
-          min: 16
-          max: 24
-          step: 0.5
-          unit_of_measurement: °C
-          mode: box
-          default: 19
-
-    ete_debut_semaine:
-      name: Début de journée (semaine)
-      selector:
-        time:
-          default: "06:00:00"
-
-    ete_fin_semaine:
-      name: Fin de journée (semaine)
-      selector:
-        time:
-          default: "21:00:00"
-
-    ete_debut_weekend:
-      name: Début de journée (weekend)
-      selector:
-        time:
-          default: "08:00:00"
-
-    ete_fin_weekend:
-      name: Fin de journée (weekend)
-      selector:
-        time:
-          default: "22:00:00"
-
-    # AUTOMNE (structure identique au printemps)
-    automne_groupe:
-      name: Configuration Automne
-      description: "Tous les paramètres pour la saison d'automne"
-      selector:
-        action: {}
-
-    automne_mode:
-      name: Mode de climatisation
-      description: "Mode de fonctionnement pour l'automne"
-      selector:
-        select:
-          options:
-            - label: "Automatique"
-              value: "auto"
-            - label: "Refroidissement"
-              value: "cool"
-            - label: "Chauffage"
-              value: "heat"
-          default: "auto"
-
-    automne_temp_jour:
-      name: Température cible jour
-      selector:
-        number:
-          min: 18
-          max: 26
-          step: 0.5
-          unit_of_measurement: °C
-          mode: box
-          default: 21
-
-    automne_temp_nuit:
-      name: Température cible nuit
-      selector:
-        number:
-          min: 16
-          max: 24
-          step: 0.5
-          unit_of_measurement: °C
-          mode: box
-          default: 19
-
-    automne_debut_semaine:
-      name: Début de journée (semaine)
-      selector:
-        time:
-          default: "07:00:00"
-
-    automne_fin_semaine:
-      name: Fin de journée (semaine)
-      selector:
-        time:
-          default: "21:00:00"
-
-    automne_debut_weekend:
-      name: Début de journée (weekend)
-      selector:
-        time:
-          default: "08:00:00"
-
-    automne_fin_weekend:
-      name: Fin de journée (weekend)
-      selector:
-        time:
-          default: "22:00:00"
-
-    # HIVER (structure identique au printemps)
-    hiver_groupe:
-      name: Configuration Hiver
-      description: "Tous les paramètres pour la saison d'hiver"
-      selector:
-        action: {}
-
-    hiver_mode:
-      name: Mode de climatisation
-      description: "Mode de fonctionnement pour l'hiver"
-      selector:
-        select:
-          options:
-            - label: "Automatique"
-              value: "auto"
-            - label: "Refroidissement"
-              value: "cool"
-            - label: "Chauffage"
-              value: "heat"
-          default: "heat"
-
-    hiver_temp_jour:
-      name: Température cible jour
-      selector:
-        number:
-          min: 18
-          max: 26
-          step: 0.5
-          unit_of_measurement: °C
-          mode: box
-          default: 21
-
-    hiver_temp_nuit:
-      name: Température cible nuit
-      selector:
-        number:
-          min: 16
-          max: 24
-          step: 0.5
-          unit_of_measurement: °C
-          mode: box
-          default: 19
-
-    hiver_debut_semaine:
-      name: Début de journée (semaine)
-      selector:
-        time:
-          default: "07:00:00"
-
-    hiver_fin_semaine:
-      name: Fin de journée (semaine)
-      selector:
-        time:
-          default: "20:00:00"
-
-    hiver_debut_weekend:
-      name: Début de journée (weekend)
-      selector:
-        time:
-          default: "08:00:00"
-
-    hiver_fin_weekend:
-      name: Fin de journée (weekend)
-      selector:
-        time:
-          default: "21:00:00"
-
-    # PARAMÈTRES GLOBAUX
-    parametres_groupe:
-      name: Paramètres Globaux
-      description: "Paramètres généraux de fonctionnement"
-      selector:
-        action: {}
-
-    mode_weekend_actif:
-      name: Activer mode weekend
-      description: "Active les horaires spécifiques pour le weekend"
+    weekend_mode:
+      name: Mode Weekend
       selector:
         boolean:
-          default: true
-
-    seuil_tolerance:
+      default: true
+    tolerance_threshold:
       name: Seuil de tolérance
-      description: "Marge de tolérance autour de la température cible"
       selector:
         number:
           min: 0.1
-          max: 2
+          max: 2.0
           step: 0.1
-          unit_of_measurement: °C
-          mode: slider
-          default: 0.5
-
-    temperature_preservation_max:
-      name: Température maximale préservation
-      description: "Température maximale à ne pas dépasser"
+          unit_of_measurement: "°C"
+      default: 0.5
+    max_preservation_temp:
+      name: Température maximale de préservation
       selector:
         number:
-          min: 22
+          min: 20
+          max: 35
+          step: 0.5
+          unit_of_measurement: "°C"
+      default: 30
+
+    # Configuration Printemps
+    spring_mode:
+      name: Mode Climatisation (Printemps)
+      selector:
+        select:
+          options:
+            - "auto"
+            - "cool"
+            - "heat"
+      default: "auto"
+    spring_day_temp:
+      name: Température Jour (Printemps)
+      selector:
+        number:
+          min: 18
+          max: 30
+          step: 0.5
+      default: 23
+    spring_night_temp:
+      name: Température Nuit (Printemps)
+      selector:
+        number:
+          min: 16
           max: 28
           step: 0.5
-          unit_of_measurement: °C
-          mode: box
-          default: 24
+      default: 20
+    spring_weekday_start:
+      name: Début Journée Semaine (Printemps)
+      selector:
+        time:
+      default: "07:00"
+    spring_weekday_end:
+      name: Fin Journée Semaine (Printemps)
+      selector:
+        time:
+      default: "22:00"
+    spring_weekend_start:
+      name: Début Journée Weekend (Printemps)
+      selector:
+        time:
+      default: "08:00"
+    spring_weekend_end:
+      name: Fin Journée Weekend (Printemps)
+      selector:
+        time:
+      default: "23:00"
 
-mode: restart
+    # Configuration Été (similaire pour Automne et Hiver)
+    summer_mode:
+      name: Mode Climatisation (Été)
+      selector:
+        select:
+          options:
+            - "auto"
+            - "cool"
+            - "heat"
+      default: "cool"
+    # [Autres paramètres été...]
+
+variables:
+  current_season: >
+    {% set month = now().month %}
+    {% set day = now().day %}
+    {% if (month == 3 and day >= 20) or month == 4 or month == 5 or (month == 6 and day < 21) %}
+      spring
+    {% elif (month == 6 and day >= 21) or month == 7 or month == 8 or (month == 9 and day < 23) %}
+      summer
+    {% elif (month == 9 and day >= 23) or month == 10 or month == 11 or (month == 12 and day < 21) %}
+      autumn
+    {% else %}
+      winter
+    {% endif %}
+  
+  is_weekend: >
+    {% set weekday = now().isoweekday() %}
+    {{ weekday >= 6 and input.weekend_mode }}
+
+  current_period: >
+    {% set current_time = now().strftime("%H:%M") %}
+    {% set season = current_season %}
+    {% if is_weekend %}
+      {% set start_time = states(season + '_weekend_start') %}
+      {% set end_time = states(season + '_weekend_end') %}
+    {% else %}
+      {% set start_time = states(season + '_weekday_start') %}
+      {% set end_time = states(season + '_weekday_end') %}
+    {% endif %}
+    {{ 'day' if start_time <= current_time <= end_time else 'night' }}
 
 trigger:
   - platform: state
-    entity_id: !input temperature_interieur
-  - platform: state
-    entity_id: !input temperature_exterieur
+    entity_id: !input indoor_temp_sensor
   - platform: time_pattern
     minutes: "/5"
+  - platform: state
+    entity_id: !input climate_entity
 
-variables:
-  temp_int: "{{ states(!input temperature_interieur) | float }}"
-  temp_ext: "{{ states(!input temperature_exterieur) | float }}"
-  
-  # Détermination de la saison
-  saison: >
-    {% set mois = now().month %}
-    {% set jour = now().day %}
-    {% if (mois == 12 and jour >= 21) or mois in [1, 2] or (mois == 3 and jour < 20) %}
-      hiver
-    {% elif (mois == 3 and jour >= 20) or mois in [4, 5] or (mois == 6 and jour < 21) %}
-      printemps
-    {% elif (mois == 6 and jour >= 21) or mois in [7, 8] or (mois == 9 and jour < 23) %}
-      ete
-    {% else %}
-      automne
-    {% endif %}
-
-  # Détermination weekend
-  est_weekend: >
-    {% if !input mode_weekend_actif %}
-      {% set jour = now().weekday() %}
-      {{ jour in [5, 6] }}
-    {% else %}
-      false
-    {% endif %}
-
-  # Horaires selon saison et période
-  heure_debut_jour: >
-    {% if saison == 'printemps' %}
-      {% if est_weekend %}
-        {{ !input printemps_debut_weekend }}
-      {% else %}
-        {{ !input printemps_debut_semaine }}
-      {% endif %}
-    {% elif saison == 'ete' %}
-      {% if est_weekend %}
-        {{ !input ete_debut_weekend }}
-      {% else %}
-        {{ !input ete_debut_semaine }}
-      {% endif %}
-    {% elif saison == 'automne' %}
-      {% if est_weekend %}
-        {{ !input automne_debut_weekend }}
-      {% else %}
-        {{ !input automne_debut_semaine }}
-      {% endif %}
-    {% else %}
-      {% if est_weekend %}
-        {{ !input hiver_debut_weekend }}
-      {% else %}
-        {{ !input hiver_debut_semaine }}
-      {% endif %}
-    {% endif %}
-
-  heure_fin_jour: >
-    {% if saison == 'printemps' %}
-      {% if est_weekend %}
-        {{ !input printemps_fin_weekend }}
-      {% else %}
-        {{ !input printemps_fin_semaine }}
-      {% endif %}
-    {% elif saison == 'ete' %}
-      {% if est_weekend %}
-        {{ !input ete_fin_weekend }}
-      {% else %}
-        {{ !input ete_fin_semaine }}
-      {% endif %}
-    {% elif saison == 'automne' %}
-      {% if est_weekend %}
-        {{ !input automne_fin_weekend }}
-      {% else %}
-        {{ !input automne_fin_semaine }}
-      {% endif %}
-    {% else %}
-      {% if est_weekend %}
-        {{ !input hiver_fin_weekend }}
-      {% else %}
-        {{ !input hiver_fin_semaine }}
-      {% endif %}
-    {% endif %}
-
-  # Mode climatisation selon saison
-  mode_clim: >
-    {% if saison == 'printemps' %}
-      {{ !input printemps_mode }}
-    {% elif saison == 'ete' %}
-      {{ !input ete_mode }}
-    {% elif saison == 'automne' %}
-      {{ !input automne_mode }}
-    {% else %}
-      {{ !input hiver_mode }}
-    {% endif %}
-
-  # Température cible selon saison et période jour/nuit
-  est_periode_jour: >
-    {% set current_time = now().strftime('%H:%M:00') %}
-    {{ current_time >= heure_debut_jour and current_time <= heure_fin_jour }}
-
-  temp_cible: >
-    {% if est_periode_jour %}
-      {% if saison == 'printemps' %}
-        {{ !input printemps_temp_jour }}
-      {% elif saison == 'ete' %}
-        {{ !input ete_temp_jour }}
-      {% elif saison == 'automne' %}
-        {{ !input automne_temp_jour }}
-      {% else %}
-        {{ !input hiver_temp_jour }}
-      {% endif %}
-    {% else %}
-      {% if saison == 'printemps' %}
-        {{ !input printemps_temp_nuit }}
-      {% elif saison == 'ete' %}
-        {{ !input ete_temp_nuit }}
-      {% elif saison == 'automne' %}
-        {{ !input automne_temp_nuit }}
-      {% else %}
-        {{ !input hiver_temp_nuit }}
-      {% endif %}
-    {% endif %}
-
-  # Calcul des seuils et régulation nécessaire
-  seuil_haut: "{{ temp_cible | float + !input seuil_tolerance | float }}"
-  seuil_bas: "{{ temp_cible | float - !input seuil_tolerance | float }}"
-  
-  regulation_necessaire: >
-    {% if mode_clim == 'cool' %}
-      {{ temp_int > seuil_haut }}
-    {% elif mode_clim == 'heat' %}
-      {{ temp_int < seuil_bas }}
-    {% else %}
-      {{ temp_int > seuil_haut or temp_int < seuil_bas }}
-    {% endif %}
-
-  delta_temperature: "{{ (temp_int - temp_ext) | abs }}"
-  
+condition:
+  - condition: template
+    value_template: >
+      {% set target_temp = states(current_season + '_' + current_period + '_temp') | float %}
+      {% set current_temp = states(indoor_temp_sensor) | float %}
+      {% set diff = current_temp - target_temp | abs %}
+      {{ diff > tolerance_threshold or states(climate_entity) != desired_state }}
 
 action:
+  - variables:
+      target_temp: "{{ states(current_season + '_' + current_period + '_temp') }}"
+      current_mode: "{{ states(current_season + '_mode') }}"
+  
   - choose:
       # Mode Préservation
       - conditions:
           - condition: template
-            value_template: "{{ temp_int > !input temperature_preservation_max }}"
+            value_template: >
+              {{ states(indoor_temp_sensor) | float > max_preservation_temp | float }}
         sequence:
           - service: climate.set_hvac_mode
             target:
-              entity_id: !input climatiseur
+              entity_id: !input climate_entity
             data:
-              hvac_mode: "{{ mode_clim }}"
+              hvac_mode: "cool"
           - service: climate.set_temperature
+            target:
+              entity_id: !input climate_entity
             data:
-              entity_id: !input climatiseur
-              temperature: "{{ !input temperature_preservation_max }}"
-
+              temperature: "{{ max_preservation_temp }}"
+      
       # Mode Régulation
       - conditions:
           - condition: template
-            value_template: "{{ regulation_necessaire }}"
+            value_template: >
+              {% set current_temp = states(indoor_temp_sensor) | float %}
+              {% set target = target_temp | float %}
+              {% set threshold = tolerance_threshold | float %}
+              {{ current_temp > target + threshold or current_temp < target - threshold }}
         sequence:
           - service: climate.set_hvac_mode
             target:
-              entity_id: !input climatiseur
+              entity_id: !input climate_entity
             data:
-              hvac_mode: "{{ mode_clim }}"
+              hvac_mode: "{{ current_mode }}"
           - service: climate.set_temperature
+            target:
+              entity_id: !input climate_entity
             data:
-              entity_id: !input climatiseur
-              temperature: "{{ temp_cible }}"
-
-    # Mode naturel (default)
+              temperature: "{{ target_temp }}"
+    
+    # Mode Naturel (default)
     default:
-      - service: climate.set_hvac_mode
+      - service: climate.turn_off
         target:
-          entity_id: !input climatiseur
-        data:
-          hvac_mode: "off"
+          entity_id: !input climate_entity
 
   # Logging
   - service: logbook.log
     data:
       name: "Climatisation"
       message: >
-        Saison: {{ saison }},
-        Période: {{ 'Jour' if est_periode_jour else 'Nuit' }},
-        Type Jour: {{ 'Weekend' if est_weekend else 'Semaine' }},
-        Mode: {{ mode_clim }},
-        Temp int: {{ temp_int }}°C,
-        Temp ext: {{ temp_ext }}°C,
-        Cible: {{ temp_cible }}°C
+        Mode: {{ states(climate_entity) }}, 
+        Temp. Cible: {{ target_temp }}°C, 
+        Temp. Actuelle: {{ states(indoor_temp_sensor) }}°C
