@@ -48,7 +48,7 @@ blueprint:
           max: 22
           step: 0.5
           unit_of_measurement: °C
-      default: 17
+      default: 18
     
     spring_mode:
       name: "Mode climatisation (Printemps)"
