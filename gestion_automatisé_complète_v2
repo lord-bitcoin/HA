@@ -2,7 +2,7 @@ blueprint:
   name: Gestion Automatique de Climatisation
   description: Gestion intelligente de la climatisation selon la saison et les horaires
   domain: automation
-  source_url: "your_repository_url"
+  source_url: https://github.com/lord-bitcoin/HA/blob/main/gestion_automatis%C3%A9_compl%C3%A8te_v2
   input:
     climate_entity:
       name: Climatiseur
