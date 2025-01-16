@@ -22,10 +22,10 @@ blueprint:
       selector:
         number:
           min: 18
-          max: 26
+          max: 24
           step: 0.5
           unit_of_measurement: °C
-      default: 22
+      default: 19
     
     spring_mode:
       name: "Mode climatisation (Printemps)"
@@ -42,11 +42,11 @@ blueprint:
       name: "Température cible (Été)"
       selector:
         number:
-          min: 20
-          max: 28
+          min: 18
+          max: 24
           step: 0.5
           unit_of_measurement: °C
-      default: 24
+      default: 21
     
     summer_mode:
       name: "Mode climatisation (Été)"
@@ -64,10 +64,10 @@ blueprint:
       selector:
         number:
           min: 18
-          max: 26
+          max: 24
           step: 0.5
           unit_of_measurement: °C
-      default: 22
+      default: 19
     
     autumn_mode:
       name: "Mode climatisation (Automne)"
@@ -84,11 +84,11 @@ blueprint:
       name: "Température cible (Hiver)"
       selector:
         number:
-          min: 16
+          min: 18
           max: 24
           step: 0.5
           unit_of_measurement: °C
-      default: 21
+      default: 19
     
     winter_mode:
       name: "Mode climatisation (Hiver)"
@@ -105,10 +105,10 @@ blueprint:
       selector:
         number:
           min: 20
-          max: 35
+          max: 30
           step: 0.5
           unit_of_measurement: °C
-      default: 30
+      default: 24
 
 trigger:
   - platform: state
