@@ -506,4 +506,50 @@ action:
       # Mode Préservation
       - conditions:
           - condition: template
-            value_template: "{{ temp_int > !input temperature_preservation_
+            value_template: "{{ temp_int > !input temperature_preservation_max }}"
+        sequence:
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input climatiseur
+            data:
+              hvac_mode: "{{ mode_clim }}"
+          - service: climate.set_temperature
+            data:
+              entity_id: !input climatiseur
+              temperature: "{{ !input temperature_preservation_max }}"
+
+      # Mode Régulation
+      - conditions:
+          - condition: template
+            value_template: "{{ regulation_necessaire }}"
+        sequence:
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input climatiseur
+            data:
+              hvac_mode: "{{ mode_clim }}"
+          - service: climate.set_temperature
+            data:
+              entity_id: !input climatiseur
+              temperature: "{{ temp_cible }}"
+
+    # Mode naturel (default)
+    default:
+      - service: climate.set_hvac_mode
+        target:
+          entity_id: !input climatiseur
+        data:
+          hvac_mode: "off"
+
+  # Logging
+  - service: logbook.log
+    data:
+      name: "Climatisation"
+      message: >
+        Saison: {{ saison }},
+        Période: {{ 'Jour' if est_periode_jour else 'Nuit' }},
+        Type Jour: {{ 'Weekend' if est_weekend else 'Semaine' }},
+        Mode: {{ mode_clim }},
+        Temp int: {{ temp_int }}°C,
+        Temp ext: {{ temp_ext }}°C,
+        Cible: {{ temp_cible }}°C
