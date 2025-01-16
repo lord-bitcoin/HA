@@ -1,6 +1,6 @@
 blueprint:
   name: "Gestion Automatique de Climatisation"
-  description: "Gestion de climatisation par saison et horaires"
+  description: "Gestion de climatisation par saison avec températures et modes adaptés"
   domain: automation
   input:
     climate_entity:
@@ -16,15 +16,89 @@ blueprint:
           domain: sensor
           device_class: temperature
     
-    target_temp:
-      name: "Température cible"
+    # Configuration Printemps
+    spring_target_temp:
+      name: "Température cible (Printemps)"
+      selector:
+        number:
+          min: 18
+          max: 26
+          step: 0.5
+          unit_of_measurement: °C
+      default: 22
+    
+    spring_mode:
+      name: "Mode climatisation (Printemps)"
+      selector:
+        select:
+          options:
+            - auto
+            - cool
+            - heat
+      default: auto
+
+    # Configuration Été
+    summer_target_temp:
+      name: "Température cible (Été)"
+      selector:
+        number:
+          min: 20
+          max: 28
+          step: 0.5
+          unit_of_measurement: °C
+      default: 24
+    
+    summer_mode:
+      name: "Mode climatisation (Été)"
+      selector:
+        select:
+          options:
+            - auto
+            - cool
+            - heat
+      default: cool
+
+    # Configuration Automne
+    autumn_target_temp:
+      name: "Température cible (Automne)"
+      selector:
+        number:
+          min: 18
+          max: 26
+          step: 0.5
+          unit_of_measurement: °C
+      default: 22
+    
+    autumn_mode:
+      name: "Mode climatisation (Automne)"
+      selector:
+        select:
+          options:
+            - auto
+            - cool
+            - heat
+      default: auto
+
+    # Configuration Hiver
+    winter_target_temp:
+      name: "Température cible (Hiver)"
       selector:
         number:
           min: 16
-          max: 30
+          max: 24
           step: 0.5
           unit_of_measurement: °C
-      default: 23
+      default: 21
+    
+    winter_mode:
+      name: "Mode climatisation (Hiver)"
+      selector:
+        select:
+          options:
+            - auto
+            - cool
+            - heat
+      default: heat
     
     max_temp:
       name: "Température maximale"
@@ -35,16 +109,6 @@ blueprint:
           step: 0.5
           unit_of_measurement: °C
       default: 30
-    
-    mode:
-      name: "Mode climatisation"
-      selector:
-        select:
-          options:
-            - auto
-            - cool
-            - heat
-      default: auto
 
 trigger:
   - platform: state
@@ -52,9 +116,45 @@ trigger:
   - platform: time_pattern
     minutes: "/5"
 
+variables:
+  current_season: >
+    {% set month = now().month %}
+    {% set day = now().day %}
+    {% if (month == 3 and day >= 20) or month == 4 or month == 5 or (month == 6 and day < 21) %}
+      spring
+    {% elif (month == 6 and day >= 21) or month == 7 or month == 8 or (month == 9 and day < 23) %}
+      summer
+    {% elif (month == 9 and day >= 23) or month == 10 or month == 11 or (month == 12 and day < 21) %}
+      autumn
+    {% else %}
+      winter
+    {% endif %}
+
+  target_temp: >
+    {% if current_season == "spring" %}
+      {{ states(spring_target_temp) }}
+    {% elif current_season == "summer" %}
+      {{ states(summer_target_temp) }}
+    {% elif current_season == "autumn" %}
+      {{ states(autumn_target_temp) }}
+    {% else %}
+      {{ states(winter_target_temp) }}
+    {% endif %}
+
+  current_mode: >
+    {% if current_season == "spring" %}
+      {{ states(spring_mode) }}
+    {% elif current_season == "summer" %}
+      {{ states(summer_mode) }}
+    {% elif current_season == "autumn" %}
+      {{ states(autumn_mode) }}
+    {% else %}
+      {{ states(winter_mode) }}
+    {% endif %}
+
 condition:
   - condition: template
-    value_template: "{{ states(temp_sensor)|float > states(target_temp)|float }}"
+    value_template: "{{ states(temp_sensor)|float > target_temp|float }}"
 
 action:
   - choose:
@@ -78,9 +178,14 @@ action:
         target:
           entity_id: !input "climate_entity"
         data:
-          hvac_mode: "{{ states(mode) }}"
+          hvac_mode: "{{ current_mode }}"
       - service: climate.set_temperature
         target:
           entity_id: !input "climate_entity"
         data:
-          temperature: "{{ states(target_temp)|float }}"
+          temperature: "{{ target_temp|float }}"
+
+  - service: logbook.log
+    data:
+      name: "Climatisation"
+      message: "Mode: {{ current_mode }}, Saison: {{ current_season }}, Température cible: {{ target_temp }}°C"
