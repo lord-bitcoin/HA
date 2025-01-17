@@ -146,7 +146,7 @@ trigger:
     minutes: "/30"
 
 condition:
-  - condition: template
+  condition: template
     value_template: >-
       {% if !input mode_semaine_weekend == 'semaine' %}
         {{ now().weekday() in [0,1,2,3,4] }}
@@ -171,7 +171,7 @@ action:
 
   - choose:
       # 1. Si humidité hors limites -> mode dry
-      - conditions:
+        conditions:
           - condition: template
             value_template: >-
               {{ 
@@ -185,7 +185,7 @@ action:
               hvac_mode: "dry"
 
       # 2. Si température intérieure hors limites -> ajustement
-      - conditions:
+        conditions:
           - condition: template
             value_template: >-
               {{ 
@@ -203,7 +203,7 @@ action:
               temperature: "{{ temperature_eco | float }}"
 
       # 3. Si température extérieure très élevée -> mode préservation
-      - conditions:
+        conditions:
           - condition: template
             value_template: >-
               {{ temperature_exterieure > (temperature_cible | float + 7) }}
@@ -219,7 +219,7 @@ action:
                 {{ [ (temperature_exterieure | float - 7), (!input temperature_max_preservation | float) ] | min }}
 
         # 4. Zone de confort -> arrêt
-        - conditions:
+          conditions:
             - condition: template 
               value_template: >-
                 {{ 
