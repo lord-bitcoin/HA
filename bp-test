@@ -195,11 +195,11 @@ action:
   - condition: state
     entity_id: input_boolean.conditions_clim_ok
     state: "on"
-    - choose:
-      - conditions: 
+  - choose:
+    - conditions: 
         - condition: template
           value_template: >-
-            {{ temperature_interieure > temperature_max or temperature_interieure < temperature_min }}
+           {{ temperature_interieure > temperature_max or temperature_interieure < temperature_min }}
       sequence:
         - service: script.gestion_notifications_critique
           data:
