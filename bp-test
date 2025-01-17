@@ -78,17 +78,19 @@ blueprint:
       selector:
         number:
           min: 0
-          max: 3
+          max: 2
           step: 0.5
           unit_of_measurement: °C
+          defaut: 
     temperature_max_preservation:
       name: Température max tolérée
       selector:
         number:
-          min: 20
+          min: 24
           max: 30
           step: 0.5
           unit_of_measurement: °C
+          default: 26
     humidite_min:
       name: Humidité minimale
       selector:
@@ -97,14 +99,16 @@ blueprint:
           max: 50
           step: 2.5
           unit_of_measurement: "%"
+          default: 45
     humidite_max:
       name: Humidité maximale
       selector:
         number:
-          min: 60
-          max: 70
+          min: 50
+          max: 60
           step: 2.5
           unit_of_measurement: "%"
+          default: 55
     mode_semaine_weekend:
       name: Mode semaine ou week-end
       selector:
@@ -121,7 +125,7 @@ trigger:
   - platform: state
     entity_id: !input humidite_exterieur
   - platform: time_pattern
-    minutes: "/30"
+    minutes: "/60"
 variables:
   mode_vacances_actif: "{{ is_state('input.mode_vacances', 'on') }}"
   mode_actuel: "{{ input.mode_climatisation }}"
@@ -136,14 +140,14 @@ variables:
     {{
       [temperature_exterieure | float - 7, (input.temperature_max_preservation | float)] | min
     }}
-  humidite_extreme_basse: "{{ input.humidite_min | float - 30 }}"
-  humidite_extreme_haute: "{{ input.humidite_max | float + 30 }}"
+  humidite_extreme_basse: "{{ input.humidite_min | float - 20 }}"
+  humidite_extreme_haute: "{{ input.humidite_max | float + 20 }}"
   humidite_min_marge: "{{ input.humidite_min | float + 2.5 }}"
   humidite_max_marge: "{{ input.humidite_max | float - 2.5 }}"
   ajustement_humidite: >-
     {{
-      -5 if humidite_exterieure <= (input.humidite_min | float - 30) else 
-      5 if humidite_exterieure >= (input.humidite_max | float + 30) else 
+      -5 if humidite_exterieure <= (input.humidite_min | float - 20) else 
+      5 if humidite_exterieure >= (input.humidite_max | float + 20) else 
       0
     }}
   humidite_min_finale: "{{ humidite_min_marge + ajustement_humidite }}"
