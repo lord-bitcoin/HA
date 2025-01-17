@@ -175,7 +175,7 @@ variables:
     {% endif %}
 
 
-condition:+
+conditions:
   - condition: template
     value_template: >-
       {% if mode_semaine_weekend == 'semaine' %}
