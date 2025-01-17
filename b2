@@ -147,7 +147,7 @@ trigger:
 
 condition:
   - condition: template
-    value_template: >-
+    value_template: >- 
       {% if !input mode_semaine_weekend == 'semaine' %}
         {{ now().weekday() in [0,1,2,3,4] }}
       {% else %}
