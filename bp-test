@@ -115,36 +115,36 @@ blueprint:
 mode: single
 trigger:
   - platform: state
-    entity_id: !input temperature_interieur
+    entity_id: input.temperature_interieur
   - platform: state
-    entity_id: !input humidite_interieur
+    entity_id: input.humidite_interieur
   - platform: state
-    entity_id: !input humidite_exterieur
+    entity_id: input.humidite_exterieur
   - platform: time_pattern
     minutes: "/30"
 variables:
-  mode_actuel: !input mode_climatisation
-  temperature_cible: !input temperature_cible
-  temperature_interieure: "{{ states(!input temperature_interieur) | float }}"
-  temperature_exterieure: "{{ states(!input temperature_exterieur) | float }}"
-  humidite_interieure: "{{ states(!input humidite_interieur) | float }}"
-  humidite_exterieure: "{{ states(!input humidite_exterieur) | float }}"
-  temperature_min: "{{ temperature_cible | float - (!input seuil_tolerance | float) }}"
-  temperature_max: "{{ temperature_cible | float + (!input seuil_tolerance | float) }}"
+  mode_actuel: input.mode_climatisation
+  temperature_cible: input.temperature_cible
+  temperature_interieure: "{{ states(input.temperature_interieur) | float }}"
+  temperature_exterieure: "{{ states(input.temperature_exterieur) | float }}"
+  humidite_interieure: "{{ states(input.humidite_interieur) | float }}"
+  humidite_exterieure: "{{ states(input.humidite_exterieur) | float }}"
+  temperature_min: "{{ temperature_cible | float - (input.seuil_tolerance | float) }}"
+  temperature_max: "{{ temperature_cible | float + (input.seuil_tolerance | float) }}"
   temperature_cible_preservation: >-
     {{
-      [temperature_exterieure | float - 7, (!input temperature_max_preservation | float)] | min
+      [temperature_exterieure | float - 7, (input.temperature_max_preservation | float)] | min
     }}
   # Ajustement des tolérances d'humidité en fonction de l'humidité extérieure
   humidite_min_marge: >-
     {{
-      (!input humidite_min | float + 2.5) -
-      (5 if humidite_exterieure <= (!input humidite_min | float - 30) else 0)
+      (input humidite_min | float + 2.5) -
+      (5 if humidite_exterieure <= (input.humidite_min | float - 30) else 0)
     }}
   humidite_max_marge: >-
     {{
-      (!input humidite_max | float - 2.5) +
-      (5 if humidite_exterieure >= (!input humidite_max | float + 30) else 0)
+      (input humidite_max | float - 2.5) +
+      (5 if humidite_exterieure >= (input.humidite_max | float + 30) else 0)
     }}
   # Définitions des saisons
   saison_actuelle: >-
@@ -168,7 +168,7 @@ conditions:
       {% endif %}
   - condition: template
     value_template: >-
-      {{ saison_actuelle in !input saisons_actives }}
+      {{ saison_actuelle in input.saisons_actives }}
 action:
   - choose:
       - conditions:
@@ -177,11 +177,11 @@ action:
               {{ humidite_interieure < humidite_min_marge or humidite_interieure > humidite_max_marge }}
           - condition: template
             value_template: >-
-              {{ state_attr(!input climatiseur, 'hvac_mode') != 'dry' }}
+              {{ state_attr(input.climatiseur, 'hvac_mode') != 'dry' }}
         sequence:
           - service: climate.set_hvac_mode
             data:
-              entity_id: !input climatiseur
+              entity_id: input.climatiseur
               hvac_mode: "dry"
 
       - conditions:
@@ -190,15 +190,15 @@ action:
               {{ temperature_interieure > temperature_max or temperature_interieure < temperature_min }}
           - condition: template
             value_template: >-
-              {{ state_attr(!input climatiseur, 'hvac_mode') != mode_actuel }}
+              {{ state_attr(input.climatiseur, 'hvac_mode') != mode_actuel }}
         sequence:
           - service: climate.set_hvac_mode
             data:
-              entity_id: !input climatiseur
+              entity_id: input.climatiseur
               hvac_mode: "{{ mode_actuel }}"
           - service: climate.set_temperature
             data:
-              entity_id: !input climatiseur
+              entity_id: input.climatiseur
               temperature: "{{ temperature_cible }}"
       - conditions:
           - condition: template
@@ -206,17 +206,17 @@ action:
               {{ temperature_exterieure > (temperature_cible | float + 7) }}
           - condition: template
             value_template: >-
-              {{ state_attr(!input climatiseur, 'hvac_mode') != 'cool' }}
+              {{ state_attr(input.climatiseur, 'hvac_mode') != 'cool' }}
         sequence:
           - service: climate.set_hvac_mode
             data:
-              entity_id: !input climatiseur
+              entity_id: input.climatiseur
               hvac_mode: "cool"
           - service: climate.set_temperature
             data:
-              entity_id: !input climatiseur
+              entity_id: input.climatiseur
               temperature: >-
-                {{ [temperature_exterieure | float - 7, (!input temperature_max_preservation | float)] | min }}
+                {{ [temperature_exterieure | float - 7, (input.temperature_max_preservation | float)] | min }}
       - conditions:
           - condition: template
             value_template: >-
@@ -226,11 +226,11 @@ action:
               }}
           - condition: template
             value_template: >-
-              {{ state_attr(!input climatiseur, 'hvac_mode') != 'off' }}
+              {{ state_attr(input.climatiseur, 'hvac_mode') != 'off' }}
         sequence:
           - service: climate.set_hvac_mode
             data:
-              entity_id: !input climatiseur
+              entity_id: input.climatiseur
               hvac_mode: "off"
       # Mode de préservation
       - conditions:
@@ -239,14 +239,14 @@ action:
               {{ temperature_exterieure > (temperature_interieure + 7) }}
           - condition: template
             value_template: >-
-              {{ state_attr(!input climatiseur, 'hvac_mode') != 'cool' }}
+              {{ state_attr(input.climatiseur, 'hvac_mode') != 'cool' }}
         sequence:
           - service: climate.set_hvac_mode
             data:
-              entity_id: !input climatiseur
+              entity_id: input.climatiseur
               hvac_mode: "cool"
           - service: climate.set_temperature
             data:
-              entity_id: !input climatiseur
+              entity_id: input.climatiseur
               temperature: "{{ temperature_cible_preservation }}"
 
