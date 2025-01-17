@@ -8,42 +8,36 @@ blueprint:
     Ajuste les tolérances d'humidité en fonction de l'humidité extérieure.
     Configure des comportements spécifiques pour la semaine ou le week-end.
   domain: automation
-
   input:
     climatiseur:
       name: Climatiseur
       selector:
         entity:
           domain: climate
-
     temperature_interieur:
       name: Capteur de température intérieure
       selector:
         entity:
           domain: sensor
           device_class: temperature
-
     temperature_exterieur:
       name: Capteur de température extérieure
       selector:
         entity:
           domain: sensor
           device_class: temperature
-
     humidite_interieur:
       name: Capteur d'humidité intérieure
       selector:
         entity:
           domain: sensor
           device_class: humidity
-
     humidite_exterieur:
       name: Capteur d'humidité extérieure
       selector:
         entity:
           domain: sensor
           device_class: humidity
-
     saisons_actives:
       name: Saisons actives
       description: Choisissez les saisons pendant lesquelles cette automatisation sera active.
@@ -55,7 +49,6 @@ blueprint:
             - ete
             - automne
             - hiver
-
     mode_climatisation:
       name: Mode de climatisation
       selector:
@@ -64,7 +57,6 @@ blueprint:
             - heat
             - cool
             - auto
-
     temperature_cible:
       name: Température cible
       selector:
@@ -73,17 +65,14 @@ blueprint:
           max: 26
           step: 0.5
           unit_of_measurement: °C
-
     heure_debut_jour:
       name: Heure de début de la journée
       selector:
         time:
-
     heure_fin_jour:
       name: Heure de fin de la journée
       selector:
         time:
-
     seuil_tolerance:
       name: Seuil de tolérance
       selector:
@@ -92,7 +81,6 @@ blueprint:
           max: 3
           step: 0.5
           unit_of_measurement: °C
-
     temperature_max_preservation:
       name: Température max tolérée
       selector:
@@ -101,7 +89,6 @@ blueprint:
           max: 30
           step: 0.5
           unit_of_measurement: °C
-
     humidite_min:
       name: Humidité minimale
       selector:
@@ -110,7 +97,6 @@ blueprint:
           max: 50
           step: 2.5
           unit_of_measurement: "%"
-
     humidite_max:
       name: Humidité maximale
       selector:
@@ -119,7 +105,6 @@ blueprint:
           max: 70
           step: 2.5
           unit_of_measurement: "%"
-
     mode_semaine_weekend:
       name: Mode semaine ou week-end
       selector:
@@ -127,9 +112,7 @@ blueprint:
           options:
             - semaine
             - weekend
-
 mode: single
-
 trigger:
   - platform: state
     entity_id: !input temperature_interieur
@@ -139,7 +122,6 @@ trigger:
     entity_id: !input humidite_exterieur
   - platform: time_pattern
     minutes: "/30"
-
 variables:
   mode_actuel: !input mode_climatisation
   temperature_cible: !input temperature_cible
@@ -149,12 +131,10 @@ variables:
   humidite_exterieure: "{{ states(!input humidite_exterieur) | float }}"
   temperature_min: "{{ temperature_cible | float - (!input seuil_tolerance | float) }}"
   temperature_max: "{{ temperature_cible | float + (!input seuil_tolerance | float) }}"
-
   temperature_cible_preservation: >-
     {{
       [temperature_exterieure | float - 7, (!input temperature_max_preservation | float)] | min
     }}
-
   # Ajustement des tolérances d'humidité en fonction de l'humidité extérieure
   humidite_min_marge: >-
     {{
@@ -178,8 +158,6 @@ variables:
     {% else %}
       hiver
     {% endif %}
-
-
 conditions:
   - condition: template
     value_template: >-
@@ -191,8 +169,6 @@ conditions:
   - condition: template
     value_template: >-
       {{ saison_actuelle in !input saisons_actives }}
-
-
 action:
   - choose:
       - conditions:
@@ -224,7 +200,6 @@ action:
             data:
               entity_id: !input climatiseur
               temperature: "{{ temperature_cible }}"
-
       - conditions:
           - condition: template
             value_template: >-
@@ -242,7 +217,6 @@ action:
               entity_id: !input climatiseur
               temperature: >-
                 {{ [temperature_exterieure | float - 7, (!input temperature_max_preservation | float)] | min }}
-
       - conditions:
           - condition: template
             value_template: >-
@@ -258,7 +232,6 @@ action:
             data:
               entity_id: !input climatiseur
               hvac_mode: "off"
-
       # Mode de préservation
       - conditions:
           - condition: template
