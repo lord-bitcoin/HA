@@ -172,6 +172,14 @@ condition:
       {% endif %}
 
 action:
+  - service: file.write
+  data:
+    path: /config/data/données_client_climatiseur.csv
+    append: true
+    content: >
+      "{{ now() }},{{ temperature_interieure }},{{ temperature_exterieure }},
+      {{ humidite_interieure }},{{ humidite_exterieure }},{{ mode_actuel }}"
+
   - choose:
       - conditions:
           - condition: template
