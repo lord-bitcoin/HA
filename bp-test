@@ -1,11 +1,12 @@
 blueprint:
-  name: Gestion automatisée des climatiseurs par saison et température (Optimisé)
+  name: Gestion automatisée des climatiseurs par saison et température
   description: >
     Automatise la gestion des climatiseurs selon la saison, les plages horaires, 
     et les températures mesurées à l'intérieur et à l'extérieur.
     Active un mode "dry" si l'humidité mesurée sort des seuils définis, avec une marge dynamique 
     ajustable pour éviter un fonctionnement trop fréquent.
-    Vérifie l'état du climatiseur avant d'exécuter toute action pour éviter les appels redondants.
+    Ajuste les tolérances d'humidité en fonction de l'humidité extérieure.
+    Configure des comportements spécifiques pour la semaine ou le week-end.
   domain: automation
 
   input:
@@ -43,10 +44,12 @@ blueprint:
           domain: sensor
           device_class: humidity
 
-    saison:
-      name: Saison actuelle
+    saisons_actives:
+      name: Saisons actives
+      description: Choisissez les saisons pendant lesquelles cette automatisation sera active.
       selector:
         select:
+          multiple: true
           options:
             - printemps
             - ete
@@ -138,7 +141,6 @@ trigger:
     minutes: "/30"
 
 variables:
-  saison: !input saison
   mode_actuel: !input mode_climatisation
   temperature_cible: !input temperature_cible
   temperature_interieure: "{{ states(!input temperature_interieur) | float }}"
@@ -152,14 +154,26 @@ variables:
   facteur_tolerance: "{{ 0.5 if saison in ['hiver', 'automne'] else 0 }}"
   humidite_min_marge: >-
     {{
-      (!input humidite_min | float + 2.5 + facteur_tolerance) - 
+      (!input humidite_min | float + 2.5 + facteur_tolerance) -
       (5 if humidite_exterieure <= (!input humidite_min | float - 30) else 0)
     }}
   humidite_max_marge: >-
     {{
-      (!input humidite_max | float - 2.5 - facteur_tolerance) + 
+      (!input humidite_max | float - 2.5 - facteur_tolerance) +
       (5 if humidite_exterieure >= (!input humidite_max | float + 30) else 0)
     }}
+  saison_actuelle: >-
+    {% set today = now().date() %}
+    {% if today >= today.replace(month=3, day=20) and today <= today.replace(month=6, day=20) %}
+      printemps
+    {% elif today >= today.replace(month=6, day=21) and today <= today.replace(month=9, day=22) %}
+      ete
+    {% elif today >= today.replace(month=9, day=23) and today <= today.replace(month=12, day=20) %}
+      automne
+    {% else %}
+      hiver
+    {% endif %}
+
 
 condition:
   - condition: template
@@ -169,52 +183,42 @@ condition:
       {% else %}
         {{ now().weekday() in [5, 6] }}
       {% endif %}
+      
+  - condition: template
+  value_template: >-
+    {{ saison_actuelle in !input saisons_actives }}
+
 
 action:
   - choose:
-      # 1. Mode déshumidification (dry)
       - conditions:
           - condition: template
             value_template: >-
               {{ humidite_interieure < humidite_min_marge or humidite_interieure > humidite_max_marge }}
-          - condition: template
-            value_template: >-
-              {{ state_attr(!input climatiseur, 'hvac_mode') != 'dry' }}
         sequence:
           - service: climate.set_hvac_mode
             data:
               entity_id: !input climatiseur
               hvac_mode: "dry"
 
-      # 2. Mode général (heat, cool, auto)
       - conditions:
           - condition: template
             value_template: >-
               {{ temperature_interieure > temperature_max or temperature_interieure < temperature_min }}
-          - condition: template
-            value_template: >-
-              {{ state_attr(!input climatiseur, 'hvac_mode') != mode_actuel }}
         sequence:
           - service: climate.set_hvac_mode
             data:
               entity_id: !input climatiseur
               hvac_mode: "{{ mode_actuel }}"
-          - condition: template
-            value_template: >-
-              {{ state_attr(!input climatiseur, 'temperature') | float != temperature_cible }}
           - service: climate.set_temperature
             data:
               entity_id: !input climatiseur
               temperature: "{{ temperature_cible }}"
 
-      # 3. Mode refroidissement (cool) basé sur la température extérieure
       - conditions:
           - condition: template
             value_template: >-
               {{ temperature_exterieure > (temperature_cible | float + 7) }}
-          - condition: template
-            value_template: >-
-              {{ state_attr(!input climatiseur, 'hvac_mode') != 'cool' }}
         sequence:
           - service: climate.set_hvac_mode
             data:
@@ -226,7 +230,6 @@ action:
               temperature: >-
                 {{ [temperature_exterieure | float - 7, (!input temperature_max_preservation | float)] | min }}
 
-      # 4. Désactivation du climatiseur (off)
       - conditions:
           - condition: template
             value_template: >-
@@ -234,9 +237,6 @@ action:
                 (humidite_interieure >= humidite_min and humidite_interieure <= humidite_max) and
                 (temperature_interieure >= temperature_min and temperature_interieure <= temperature_max)
               }}
-          - condition: template
-            value_template: >-
-              {{ state_attr(!input climatiseur, 'hvac_mode') != 'off' }}
         sequence:
           - service: climate.set_hvac_mode
             data:
