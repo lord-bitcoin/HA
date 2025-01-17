@@ -152,18 +152,6 @@ variables:
   humidite_min_finale: "{{ humidite_min_marge + ajustement_humidite }}"
   humidite_max_finale: "{{ humidite_max_marge + ajustement_humidite }}"
 
-  # Définitions des saisons
-  saison_actuelle: >-
-    {% set today = now().date() %}
-    {% if today >= today.replace(month=3, day=20) and today <= today.replace(month=6, day=20) %}
-      printemps
-    {% elif today >= today.replace(month=6, day=21) and today <= today.replace(month=9, day=22) %}
-      ete
-    {% elif today >= today.replace(month=9, day=23) and today <= today.replace(month=12, day=20) %}
-      automne
-    {% else %}
-      hiver
-    {% endif %}
 conditions:
   - condition: template
     value_template: >-
@@ -182,15 +170,20 @@ conditions:
       {{ states(input.climatiseur) not in ['unknown', 'unavailable'] }}
   - condition: template
     value_template: >-
-      {% if mode_semaine_weekend == 'semaine' %}
-        {{ now().weekday() in [0, 1, 2, 3, 4] }}
-      {% else %}
-        {{ now().weekday() in [5, 6] }}
-      {% endif %}
-  - condition: template
-    value_template: >-
       {{ saison_actuelle in input.saisons_actives }}
 action:
+  - service: script.verifier_saison_active
+    data:
+      saisons_actives: "{{ input.saisons_actives }}"
+  - condition: state
+    entity_id: input_boolean.verifier_saison_active
+    state: "on"
+  - service: script.verifier_semaine_weekend
+    data:
+      mode_semaine_weekend: "{{ input.mode_semaine_weekend }}"
+  - condition: state
+    entity_id: input_boolean.mode_jour_valide
+    state: "on"
   - service: script.check_conditions_clim
     data:
       temperature_min: "{{ temperature_min }}"
@@ -202,7 +195,50 @@ action:
   - condition: state
     entity_id: input_boolean.conditions_clim_ok
     state: "on"
-  - choose:
+    - choose:
+    - conditions: 
+        - condition: template
+          value_template: >-
+            {{ temperature_interieure > temperature_max or temperature_interieure < temperature_min }}
+      sequence:
+        - service: script.gestion_notifications_critique
+          data:
+            type: "temperature"
+            niveau: >-
+              {% if temperature_interieure > temperature_max %}
+                max
+              {% else %}
+                min
+              {% endif %}
+            valeur: "{{ temperature_interieure }}"
+            seuil: >-
+              {% if temperature_interieure > temperature_max %}
+                {{ temperature_max }}
+              {% else %}
+                {{ temperature_min }}
+              {% endif %}
+    - conditions:
+        - condition: template
+          value_template: >-
+            {{ humidite_interieure > humidite_max_finale }}
+      sequence:
+        - service: script.gestion_notifications_critique
+          data:
+            type: "humidite"
+            niveau: "max"
+            valeur: "{{ humidite_interieure }}"
+            seuil: "{{ humidite_max_finale }}"
+    - conditions:
+        - condition: template
+          value_template: >-
+            {{ humidite_interieure < humidite_min_finale }}
+      sequence:
+        - service: script.gestion_notifications_critique
+          data:
+            type: "humidite"
+            niveau: "min"
+            valeur: "{{ humidite_interieure }}"
+            seuil: "{{ humidite_min_finale }}"
       - conditions:
           - condition: template
             value_template: >-
