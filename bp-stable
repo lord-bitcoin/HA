@@ -248,5 +248,5 @@ action:
           - service: climate.set_temperature
             data:
               entity_id: input.climatiseur
-              temperature: "{{ temperature_cible_preservation }}"
+              temperature: "{{ input.temperature_max_preservation }}"
 
