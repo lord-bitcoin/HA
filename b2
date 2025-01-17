@@ -3,21 +3,21 @@ blueprint:
   description: >
     Automatise la gestion des climatiseurs selon la saison, les plages horaires, 
     et les températures mesurées à l'intérieur et à l'extérieur.
-    Active un mode humide si l'humidité mesurée sort des seuils définis.
+    Active un mode "dry" si l'humidité mesurée sort des seuils définis, avec une marge dynamique 
+    ajustable pour éviter un fonctionnement trop fréquent.
+    Ajuste les tolérances d'humidité en fonction de l'humidité extérieure.
     Configure des comportements spécifiques pour la semaine ou le week-end.
   domain: automation
 
   input:
     climatiseur:
       name: Climatiseur
-      description: Entité du climatiseur à contrôler.
       selector:
         entity:
           domain: climate
 
     temperature_interieur:
       name: Capteur de température intérieure
-      description: Entité mesurant la température intérieure.
       selector:
         entity:
           domain: sensor
@@ -25,7 +25,6 @@ blueprint:
 
     temperature_exterieur:
       name: Capteur de température extérieure
-      description: Entité mesurant la température extérieure.
       selector:
         entity:
           domain: sensor
@@ -33,7 +32,13 @@ blueprint:
 
     humidite_interieur:
       name: Capteur d'humidité intérieure
-      description: Entité mesurant l'humidité intérieure.
+      selector:
+        entity:
+          domain: sensor
+          device_class: humidity
+
+    humidite_exterieur:
+      name: Capteur d'humidité extérieure
       selector:
         entity:
           domain: sensor
@@ -41,7 +46,6 @@ blueprint:
 
     saison:
       name: Saison actuelle
-      description: Saison pour configurer les modes.
       selector:
         select:
           options:
@@ -52,7 +56,6 @@ blueprint:
 
     mode_climatisation:
       name: Mode de climatisation
-      description: Mode de fonctionnement selon la saison.
       selector:
         select:
           options:
@@ -62,7 +65,6 @@ blueprint:
 
     temperature_cible:
       name: Température cible
-      description: Température à maintenir.
       selector:
         number:
           min: 18
@@ -82,7 +84,6 @@ blueprint:
 
     seuil_tolerance:
       name: Seuil de tolérance
-      description: Marge autour de la température cible.
       selector:
         number:
           min: 0
@@ -132,6 +133,8 @@ trigger:
     entity_id: !input temperature_interieur
   - platform: state
     entity_id: !input humidite_interieur
+  - platform: state
+    entity_id: !input humidite_exterieur
   - platform: time_pattern
     minutes: "/30"
 
@@ -142,8 +145,22 @@ variables:
   temperature_interieure: "{{ states(!input temperature_interieur) | float }}"
   temperature_exterieure: "{{ states(!input temperature_exterieur) | float }}"
   humidite_interieure: "{{ states(!input humidite_interieur) | float }}"
+  humidite_exterieure: "{{ states(!input humidite_exterieur) | float }}"
   temperature_min: "{{ temperature_cible | float - (!input seuil_tolerance | float) }}"
   temperature_max: "{{ temperature_cible | float + (!input seuil_tolerance | float) }}"
+
+  # Ajustement des tolérances d'humidité en fonction de l'humidité extérieure
+  facteur_tolerance: "{{ 0.5 if saison in ['hiver', 'automne'] else 0 }}"
+  humidite_min_marge: >-
+    {{
+      (!input humidite_min | float + 2.5 + facteur_tolerance) -
+      (5 if humidite_exterieure <= (!input humidite_min | float - 30) else 0)
+    }}
+  humidite_max_marge: >-
+    {{
+      (!input humidite_max | float - 2.5 - facteur_tolerance) +
+      (5 if humidite_exterieure >= (!input humidite_max | float + 30) else 0)
+    }}
 
 condition:
   - condition: template
@@ -159,10 +176,7 @@ action:
       - conditions:
           - condition: template
             value_template: >-
-              {{
-                humidite_interieure < (!input humidite_min | float) or 
-                humidite_interieure > (!input humidite_max | float)
-              }}
+              {{ humidite_interieure < humidite_min_marge or humidite_interieure > humidite_max_marge }}
         sequence:
           - service: climate.set_hvac_mode
             data:
@@ -172,10 +186,7 @@ action:
       - conditions:
           - condition: template
             value_template: >-
-              {{ 
-                temperature_interieure > temperature_max or 
-                temperature_interieure < temperature_min
-              }}
+              {{ temperature_interieure > temperature_max or temperature_interieure < temperature_min }}
         sequence:
           - service: climate.set_hvac_mode
             data:
@@ -198,17 +209,15 @@ action:
           - service: climate.set_temperature
             data:
               entity_id: !input climatiseur
-              temperature: >
+              temperature: >-
                 {{ [temperature_exterieure | float - 7, (!input temperature_max_preservation | float)] | min }}
 
       - conditions:
           - condition: template
             value_template: >-
               {{
-                (humidite_interieure >= (!input humidite_min | float) + 2.5) and
-                (humidite_interieure <= (!input humidite_max | float) - 2.5) and
-                (temperature_interieure >= temperature_min) and
-                (temperature_interieure <= temperature_max)
+                (humidite_interieure >= humidite_min and humidite_interieure <= humidite_max) and
+                (temperature_interieure >= temperature_min and temperature_interieure <= temperature_max)
               }}
         sequence:
           - service: climate.set_hvac_mode
