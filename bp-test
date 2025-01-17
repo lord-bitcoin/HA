@@ -196,7 +196,7 @@ action:
     entity_id: input_boolean.conditions_clim_ok
     state: "on"
     - choose:
-    - conditions: 
+      - conditions: 
         - condition: template
           value_template: >-
             {{ temperature_interieure > temperature_max or temperature_interieure < temperature_min }}
