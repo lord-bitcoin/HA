@@ -3,12 +3,11 @@ blueprint:
   description: >
     Automatise la gestion des climatiseurs selon la saison, les plages horaires, 
     et les températures mesurées à l'intérieur et à l'extérieur.
-    Active également un mode humide si l'humidité mesurée sort des seuils définis.
-    Permet de configurer un comportement spécifique pour la semaine ou le week-end.
+    Active un mode humide si l'humidité mesurée sort des seuils définis.
+    Configure des comportements spécifiques pour la semaine ou le week-end.
   domain: automation
 
   input:
-    # -- ENTITÉS ET CAPTEURS --
     climatiseur:
       name: Climatiseur
       description: Entité du climatiseur à contrôler.
@@ -40,10 +39,9 @@ blueprint:
           domain: sensor
           device_class: humidity
 
-    # -- MODE ET SAISON --
     saison:
       name: Saison actuelle
-      description: Sélection de la saison pour les réglages
+      description: Saison pour configurer les modes.
       selector:
         select:
           options:
@@ -54,7 +52,7 @@ blueprint:
 
     mode_climatisation:
       name: Mode de climatisation
-      description: Mode de fonctionnement du climatiseur selon la saison
+      description: Mode de fonctionnement selon la saison.
       selector:
         select:
           options:
@@ -64,7 +62,7 @@ blueprint:
 
     temperature_cible:
       name: Température cible
-      description: Température à maintenir pour la saison
+      description: Température à maintenir.
       selector:
         number:
           min: 18
@@ -72,23 +70,19 @@ blueprint:
           step: 0.5
           unit_of_measurement: °C
 
-    # -- PLAGES HORAIRES --
     heure_debut_jour:
       name: Heure de début de la journée
-      description: Heure de début des plages horaires de jour.
       selector:
         time:
 
     heure_fin_jour:
       name: Heure de fin de la journée
-      description: Heure de fin des plages horaires de jour.
       selector:
         time:
 
-    # -- PARAMÈTRES DIVERS --
     seuil_tolerance:
       name: Seuil de tolérance
-      description: Marge autour de la température cible pour ajuster la climatisation.
+      description: Marge autour de la température cible.
       selector:
         number:
           min: 0
@@ -97,8 +91,7 @@ blueprint:
           unit_of_measurement: °C
 
     temperature_max_preservation:
-      name: Température max tolérée - Mode préservation
-      description: Température maximale à ne pas dépasser en mode préservation.
+      name: Température max tolérée
       selector:
         number:
           min: 20
@@ -108,7 +101,6 @@ blueprint:
 
     humidite_min:
       name: Humidité minimale
-      description: Seuil d'humidité minimal avant d'activer le mode humide.
       selector:
         number:
           min: 40
@@ -118,7 +110,6 @@ blueprint:
 
     humidite_max:
       name: Humidité maximale
-      description: Seuil d'humidité maximal avant d'activer le mode humide.
       selector:
         number:
           min: 60
@@ -128,7 +119,6 @@ blueprint:
 
     mode_semaine_weekend:
       name: Mode semaine ou week-end
-      description: Applique des réglages spécifiques pour la semaine (lundi-vendredi) ou le week-end (samedi-dimanche).
       selector:
         select:
           options:
@@ -145,36 +135,31 @@ trigger:
   - platform: time_pattern
     minutes: "/30"
 
-conditions:
+variables:
+  saison: !input saison
+  mode_actuel: !input mode_climatisation
+  temperature_cible: !input temperature_cible
+  temperature_interieure: "{{ states(!input temperature_interieur) | float }}"
+  temperature_exterieure: "{{ states(!input temperature_exterieur) | float }}"
+  humidite_interieure: "{{ states(!input humidite_interieur) | float }}"
+  temperature_min: "{{ temperature_cible | float - (!input seuil_tolerance | float) }}"
+  temperature_max: "{{ temperature_cible | float + (!input seuil_tolerance | float) }}"
+
+condition:
   - condition: template
-    value_template: > 
-      {% if !input mode_semaine_weekend == 'semaine' %}
-        {{ now().weekday() in [0,1,2,3,4] }}
+    value_template: >-
+      {% if mode_semaine_weekend == 'semaine' %}
+        {{ now().weekday() in [0, 1, 2, 3, 4] }}
       {% else %}
-        {{ now().weekday() in [5,6] }}
+        {{ now().weekday() in [5, 6] }}
       {% endif %}
 
 action:
-  - variables:
-      saison: "{{ !input saison }}"
-      mode_actuel: "{{ !input mode_climatisation }}"
-      temperature_cible: "{{ !input temperature_cible }}"
-
-      temperature_interieure: "{{ states(!input temperature_interieur) | float }}"
-      temperature_exterieure: "{{ states(!input temperature_exterieur) | float }}"
-      humidite_interieure: "{{ states(!input humidite_interieur) | float }}"
-
-      temperature_min: >-
-        {{ temperature_cible | float - (!input seuil_tolerance | float) }}
-      temperature_max: >-
-        {{ temperature_cible | float + (!input seuil_tolerance | float) }}
-
   - choose:
-      # 1. Si humidité hors limites -> mode dry
-        conditions:
+      - conditions:
           - condition: template
             value_template: >-
-              {{ 
+              {{
                 humidite_interieure < (!input humidite_min | float) or 
                 humidite_interieure > (!input humidite_max | float)
               }}
@@ -184,13 +169,12 @@ action:
               entity_id: !input climatiseur
               hvac_mode: "dry"
 
-      # 2. Si température intérieure hors limites -> ajustement
-        conditions:
+      - conditions:
           - condition: template
             value_template: >-
               {{ 
-                temperature_interieure > temperature_max | float or 
-                temperature_interieure < temperature_min | float
+                temperature_interieure > temperature_max or 
+                temperature_interieure < temperature_min
               }}
         sequence:
           - service: climate.set_hvac_mode
@@ -200,10 +184,9 @@ action:
           - service: climate.set_temperature
             data:
               entity_id: !input climatiseur
-              temperature: "{{ temperature_eco | float }}"
+              temperature: "{{ temperature_cible }}"
 
-      # 3. Si température extérieure très élevée -> mode préservation
-        conditions:
+      - conditions:
           - condition: template
             value_template: >-
               {{ temperature_exterieure > (temperature_cible | float + 7) }}
@@ -216,20 +199,19 @@ action:
             data:
               entity_id: !input climatiseur
               temperature: >
-                {{ [ (temperature_exterieure | float - 7), (!input temperature_max_preservation | float) ] | min }}
+                {{ [temperature_exterieure | float - 7, (!input temperature_max_preservation | float)] | min }}
 
-        # 4. Zone de confort -> arrêt
-          conditions:
-            - condition: template 
-              value_template: >-
-                {{ 
-                  (humidite_interieure >= (!input humidite_min | float) + 2.5)
-                  and (humidite_interieure <= (!input humidite_max | float) - 2.5)
-                  and (temperature_interieure >= temperature_min | float)
-                  and (temperature_interieure <= temperature_max | float)
-                }}
-              sequence:
-                - service: climate.set_hvac_mode
-                  data:
-                    entity_id: !input climatiseur
-                    hvac_mode: "off"
+      - conditions:
+          - condition: template
+            value_template: >-
+              {{
+                (humidite_interieure >= (!input humidite_min | float) + 2.5) and
+                (humidite_interieure <= (!input humidite_max | float) - 2.5) and
+                (temperature_interieure >= temperature_min) and
+                (temperature_interieure <= temperature_max)
+              }}
+        sequence:
+          - service: climate.set_hvac_mode
+            data:
+              entity_id: !input climatiseur
+              hvac_mode: "off"
