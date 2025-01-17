@@ -175,7 +175,7 @@ variables:
     {% endif %}
 
 
-condition:
+condition:+
   - condition: template
     value_template: >-
       {% if mode_semaine_weekend == 'semaine' %}
@@ -185,8 +185,8 @@ condition:
       {% endif %}
       
   - condition: template
-  value_template: >-
-    {{ saison_actuelle in !input saisons_actives }}
+    value_template: >-
+      {{ saison_actuelle in !input saisons_actives }}
 
 
 action:
