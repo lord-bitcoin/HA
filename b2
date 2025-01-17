@@ -1,9 +1,9 @@
 blueprint:
   name: Gestion optimisée des climatiseurs par saison et température
   description: >
-    Automatise la gestion des climatiseurs en fonction des températures,
-    de l'humidité, des plages horaires et des saisons. Évite les appels redondants
-    et améliore l'efficacité en vérifiant l'état actuel des climatiseurs avant d'agir.
+    Automatise la gestion des climatiseurs selon la saison, les plages horaires,
+    les températures mesurées et l'humidité intérieure/extérieure.
+    Évite les appels redondants en vérifiant l'état actuel avant toute action.
   domain: automation
 
   input:
@@ -69,6 +69,15 @@ blueprint:
           step: 0.5
           unit_of_measurement: °C
 
+    seuil_tolerance:
+      name: Seuil de tolérance
+      selector:
+        number:
+          min: 0
+          max: 3
+          step: 0.5
+          unit_of_measurement: °C
+
     humidite_min:
       name: Humidité minimale
       selector:
@@ -92,20 +101,20 @@ mode: single
 trigger:
   - platform: state
     entity_id: !input temperature_interieur
-    for: "00:10:00"  # Température intérieure stable pendant 10 minutes
   - platform: state
     entity_id: !input humidite_interieur
-    for: "00:10:00"  # Humidité intérieure stable pendant 10 minutes
+  - platform: state
+    entity_id: !input humidite_exterieur
+  - platform: time_pattern
+    minutes: "/30"
 
 variables:
   mode_actuel: !input mode_climatisation
   temperature_cible: !input temperature_cible
   temperature_interieure: "{{ states(!input temperature_interieur) | float }}"
-  temperature_exterieure: "{{ states(!input temperature_exterieur) | float }}"
   humidite_interieure: "{{ states(!input humidite_interieur) | float }}"
-  humidite_exterieure: "{{ states(!input humidite_exterieur) | float }}"
-  humidite_min: !input humidite_min
-  humidite_max: !input humidite_max
+  temperature_min: "{{ temperature_cible - (!input seuil_tolerance | float) }}"
+  temperature_max: "{{ temperature_cible + (!input seuil_tolerance | float) }}"
 
 action:
   - choose:
@@ -113,7 +122,7 @@ action:
       - conditions:
           - condition: template
             value_template: >-
-              {{ humidite_interieure < humidite_min or humidite_interieure > humidite_max }}
+              {{ humidite_interieure < (!input humidite_min | float) or humidite_interieure > (!input humidite_max | float) }}
           - condition: template
             value_template: >-
               {{ state_attr(!input climatiseur, 'hvac_mode') != 'dry' }}
@@ -123,11 +132,11 @@ action:
               entity_id: !input climatiseur
               hvac_mode: "dry"
 
-      # 2. Ajuster le mode actif (heat, cool, auto)
+      # 2. Mode général (heat, cool, auto)
       - conditions:
           - condition: template
             value_template: >-
-              {{ temperature_interieure > (temperature_cible + 1) or temperature_interieure < (temperature_cible - 1) }}
+              {{ temperature_interieure > temperature_max or temperature_interieure < temperature_min }}
           - condition: template
             value_template: >-
               {{ state_attr(!input climatiseur, 'hvac_mode') != mode_actuel }}
@@ -144,13 +153,24 @@ action:
               entity_id: !input climatiseur
               temperature: "{{ temperature_cible }}"
 
-      # 3. Désactiver le climatiseur si tout est dans les plages
+      # 3. Mode refroidissement (cool) basé sur la température extérieure
       - conditions:
           - condition: template
             value_template: >-
-              {{
-                (humidite_interieure >= humidite_min and humidite_interieure <= humidite_max) and
-                (temperature_interieure >= (temperature_cible - 1) and temperature_interieure <= (temperature_cible + 1))
+              {{ temperature_interieure > temperature_max and state_attr(!input climatiseur, 'hvac_mode') != 'cool' }}
+        sequence:
+          - service: climate.set_hvac_mode
+            data:
+              entity_id: !input climatiseur
+              hvac_mode: "cool"
+
+      # 4. Mode arrêt (off)
+      - conditions:
+          - condition: template
+            value_template: >-
+              {{ 
+                (humidite_interieure >= !input humidite_min and humidite_interieure <= !input humidite_max) and
+                (temperature_interieure >= temperature_min and temperature_interieure <= temperature_max) 
               }}
           - condition: template
             value_template: >-
