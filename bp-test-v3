@@ -92,6 +92,21 @@ blueprint:
             - été
             - automne
 
+    days:
+      name: Jours de fonctionnement
+      description: Sélectionnez les jours pour lesquels cette automatisation est active.
+      selector:
+        multi:
+          select:
+            options:
+              - lundi
+              - mardi
+              - mercredi
+              - jeudi
+              - vendredi
+              - samedi
+              - dimanche
+
 mode: single
 
 trigger:
@@ -120,6 +135,12 @@ condition:
       {% set start_time = states('input_datetime.start_time') %}
       {% set end_time = states('input_datetime.end_time') %}
       {{ start_time <= now_time <= end_time }}
+
+  # Condition 3 : Vérifier si le jour actuel est dans la sélection de jours configurés.
+  - condition: template
+    value_template: >
+      {% set today = now().strftime('%A')|lower %}
+      {{ today in !input days }}
 
 action:
   - choose:
