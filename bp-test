@@ -166,13 +166,13 @@ action:
     data:
       saisons_actives: "{{ !input.saisons_actives }}"
   - condition: state
-    entity_id: !input_boolean.verifier_saison_active
+    entity_id: input_boolean.verifier_saison_active
     state: "on"
   - service: script.verifier_semaine_weekend
     data:
       mode_semaine_weekend: "{{ !input.mode_semaine_weekend }}"
   - condition: state
-    entity_id: !input_boolean.mode_jour_valide
+    entity_id: input_boolean.mode_jour_valide
     state: "on"
   - service: script.check_conditions_clim
     data:
@@ -183,7 +183,7 @@ action:
       temperature_interieure: "{{ !input.temperature_interieur }}"
       humidite_interieure: "{{ !input.humidite_interieur }}"
   - condition: state
-    entity_id: !input_boolean.conditions_clim_ok
+    entity_id: input_boolean.conditions_clim_ok
     state: "on"
   - choose:
       - conditions:
