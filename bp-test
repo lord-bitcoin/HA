@@ -121,7 +121,7 @@ trigger:
   - platform: state
     entity_id: !input humidite_exterieur
   - platform: time_pattern
-    minutes: 60
+    minutes: 15
 variables:
   mode_vacances_actif: "{{ is_state('input.mode_vacances', 'on') }}"
   mode_actuel: "{{ input.mode_climatisation }}"
