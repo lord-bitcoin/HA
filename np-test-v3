@@ -123,29 +123,77 @@ condition:
 
 action:
   - choose:
-      # Action 1 : Si la température intérieure est inférieure à 20°C et que la saison est l'hiver, activer le mode chauffage.
+      # Action 1 : Automatisation pour l'hiver
       - conditions:
           - condition: template
             value_template: >
-              {{ states('!input indoor_temp')|float < 20 and states('!input season') == 'hiver' }}
+              {{ states('!input season') == 'hiver' }}
         sequence:
-          - service: climate.set_hvac_mode
-            target:
-              entity_id: !input climate_entity
-            data:
-              hvac_mode: "heat"
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: >
+                      {{ states('!input indoor_temp')|float < 20 }}
+                sequence:
+                  - service: climate.set_hvac_mode
+                    target:
+                      entity_id: !input climate_entity
+                    data:
+                      hvac_mode: "heat"
 
-      # Action 2 : Si la température extérieure est supérieure à 25°C et que la saison est l'été, activer le mode refroidissement.
+      # Action 2 : Automatisation pour le printemps
       - conditions:
           - condition: template
             value_template: >
-              {{ states('!input outdoor_temp')|float > 25 and states('!input season') == 'été' }}
+              {{ states('!input season') == 'printemps' }}
         sequence:
-          - service: climate.set_hvac_mode
-            target:
-              entity_id: !input climate_entity
-            data:
-              hvac_mode: "cool"
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: >
+                      {{ states('!input indoor_temp')|float > 22 }}
+                sequence:
+                  - service: climate.set_hvac_mode
+                    target:
+                      entity_id: !input climate_entity
+                    data:
+                      hvac_mode: "cool"
+
+      # Action 3 : Automatisation pour l'été
+      - conditions:
+          - condition: template
+            value_template: >
+              {{ states('!input season') == 'été' }}
+        sequence:
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: >
+                      {{ states('!input outdoor_temp')|float > 25 }}
+                sequence:
+                  - service: climate.set_hvac_mode
+                    target:
+                      entity_id: !input climate_entity
+                    data:
+                      hvac_mode: "cool"
+
+      # Action 4 : Automatisation pour l'automne
+      - conditions:
+          - condition: template
+            value_template: >
+              {{ states('!input season') == 'automne' }}
+        sequence:
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: >
+                      {{ states('!input indoor_temp')|float < 21 }}
+                sequence:
+                  - service: climate.set_hvac_mode
+                    target:
+                      entity_id: !input climate_entity
+                    data:
+                      hvac_mode: "heat"
 
   # Action par défaut : Mettre à jour la température cible du climatiseur.
   - service: climate.set_temperature
