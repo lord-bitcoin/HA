@@ -113,7 +113,7 @@ blueprint:
             - semaine
             - weekend
 mode: single
-triggers:
+trigger:
   - platform: state
     entity_id: !input temperature_interieur
   - platform: state
@@ -161,7 +161,7 @@ conditions:
     value_template: "{{ states(input.climatiseur) not in ['unknown', 'unavailable'] }}"
   - condition: template
     value_template: "{{ saison_actuelle in input.saisons_actives }}"
-actions:
+action:
   - service: script.verifier_saison_active
     data:
       saisons_actives: "{{ input.saisons_actives }}"
