@@ -124,31 +124,30 @@ trigger:
     minutes: "/15"
 variables:
   mode_vacances_actif: "{{ is_state('input.mode_vacances', 'on') }}"
-  mode_actuel: "{{ states(input.mode_climatisation) }}"
-  temperature_cible: "{{ states(input.temperature_cible) | float }}"
-  temperature_interieure: "{{ states(input.temperature_interieur) | float }}"
-  temperature_exterieure: "{{ states(input.temperature_exterieur) | float }}"
-  humidite_interieure: "{{ states(input.humidite_interieur) | float }}"
-  humidite_exterieure: "{{ states(input.humidite_exterieur) | float }}"
-  temperature_min: "{{ states(input.temperature_cible) | float - (states(input.seuil_tolerance) | float) }}"
-  temperature_max: "{{ states(input.temperature_cible) | float + (states(input.seuil_tolerance) | float) }}"
+  mode_actuel: "{{ trigger.variables.input.mode_climatisation }}"
+  temperature_cible: "{{ trigger.variables.input.temperature_cible | float }}"
+  temperature_interieure: "{{ states(trigger.variables.input.temperature_interieur) | float }}"
+  temperature_exterieure: "{{ states(trigger.variables.input.temperature_exterieur) | float }}"
+  humidite_interieure: "{{ states(trigger.variables.input.humidite_interieur) | float }}"
+  humidite_exterieure: "{{ states(trigger.variables.input.humidite_exterieur) | float }}"
+  temperature_min: "{{ trigger.variables.input.temperature_cible | float - (trigger.variables.input.seuil_tolerance | float) }}"
+  temperature_max: "{{ trigger.variables.input.temperature_cible | float + (trigger.variables.input.seuil_tolerance | float) }}"
   temperature_cible_preservation: >-
     {{
-      [temperature_exterieure | float - 7, (states(input.temperature_max_preservation) | float)] | min
+      [temperature_exterieure | float - 7, (trigger.variables.input.temperature_max_preservation | float)] | min
     }}
-  humidite_extreme_basse: "{{ states(input.humidite_min) | float - 20 }}"
-  humidite_extreme_haute: "{{ states(input.humidite_max) | float + 20 }}"
-  humidite_min_marge: "{{ states(input.humidite_min) | float + 2.5 }}"
-  humidite_max_marge: "{{ states(input.humidite_max) | float - 2.5 }}"
+  humidite_extreme_basse: "{{ trigger.variables.input.humidite_min | float - 20 }}"
+  humidite_extreme_haute: "{{ trigger.variables.input.humidite_max | float + 20 }}"
+  humidite_min_marge: "{{ trigger.variables.input.humidite_min | float + 2.5 }}"
+  humidite_max_marge: "{{ trigger.variables.input.humidite_max | float - 2.5 }}"
   ajustement_humidite: >-
     {{
-      -5 if humidite_exterieure <= (states(input.humidite_min) | float - 20) else 
-      5 if humidite_exterieure >= (states(input.humidite_max) | float + 20) else 
+      -5 if humidite_exterieure <= (trigger.variables.input.humidite_min | float - 20) else 
+      5 if humidite_exterieure >= (trigger.variables.input.humidite_max | float + 20) else 
       0
     }}
   humidite_min_finale: "{{ humidite_min_marge + ajustement_humidite }}"
   humidite_max_finale: "{{ humidite_max_marge + ajustement_humidite }}"
-
 conditions:
   - condition: template
     value_template: "{{ states(input.temperature_interieur) not in ['unknown', 'unavailable'] }}"
