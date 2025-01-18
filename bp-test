@@ -124,26 +124,26 @@ trigger:
     minutes: "/15"
 variables:
   mode_vacances_actif: "{{ is_state('input.mode_vacances', 'on') }}"
-  mode_actuel: "{{ !input mode_climatisation }}"
-  temperature_cible: "{{ !input temperature_cible }}"
-  temperature_interieure: "{{ states(!input 'temperature_interieur') | float }}"
-  temperature_exterieure: "{{ states(!input 'temperature_exterieur') | float }}"
-  humidite_interieure: "{{ states(!input 'humidite_interieur') | float }}"
-  humidite_exterieure: "{{ states(!input 'humidite_exterieur') | float }}"
-  temperature_min: "{{ (!input temperature_cible | float) - (!input seuil_tolerance | float) }}"
-  temperature_max: "{{ (!input temperature_cible | float) + (!input seuil_tolerance | float) }}"
+  mode_actuel: "{{ states(mode_climatisation) }}"
+  temperature_cible: "{{ states(temperature_cible) | float }}"
+  temperature_interieure: "{{ states(temperature_interieur) | float }}"
+  temperature_exterieure: "{{ states(temperature_exterieur) | float }}"
+  humidite_interieure: "{{ states(humidite_interieur) | float }}"
+  humidite_exterieure: "{{ states(humidite_exterieur) | float }}"
+  temperature_min: "{{ states(temperature_cible) | float - (states(seuil_tolerance) | float) }}"
+  temperature_max: "{{ states(temperature_cible) | float + (states(seuil_tolerance) | float) }}"
   temperature_cible_preservation: >-
     {{
-      [temperature_exterieure | float - 7, (!input temperature_max_preservation | float)] | min
+      [temperature_exterieure | float - 7, (states(temperature_max_preservation) | float)] | min
     }}
-  humidite_extreme_basse: "{{ !input humidite_min | float - 20 }}"
-  humidite_extreme_haute: "{{ !input humidite_max | float + 20 }}"
-  humidite_min_marge: "{{ !input humidite_min | float + 2.5 }}"
-  humidite_max_marge: "{{ !input humidite_max | float - 2.5 }}"
+  humidite_extreme_basse: "{{ states(humidite_min) | float - 20 }}"
+  humidite_extreme_haute: "{{ states(humidite_max) | float + 20 }}"
+  humidite_min_marge: "{{ states(humidite_min) | float + 2.5 }}"
+  humidite_max_marge: "{{ states(humidite_max) | float - 2.5 }}"
   ajustement_humidite: >-
     {{
-      -5 if humidite_exterieure <= (!input humidite_min | float - 20) else 
-      5 if humidite_exterieure >= (!input humidite_max | float + 20) else 
+      -5 if humidite_exterieure <= (states(humidite_min) | float - 20) else 
+      5 if humidite_exterieure >= (states(humidite_max) | float + 20) else 
       0
     }}
   humidite_min_finale: "{{ humidite_min_marge + ajustement_humidite }}"
@@ -151,28 +151,28 @@ variables:
 
 conditions:
   - condition: template
-    value_template: "{{ states(!input 'temperature_interieur') not in ['unknown', 'unavailable'] }}"
+    value_template: "{{ states(temperature_interieur) not in ['unknown', 'unavailable'] }}"
   - condition: template
-    value_template: "{{ states(!input 'temperature_exterieur') not in ['unknown', 'unavailable'] }}"
+    value_template: "{{ states(temperature_exterieur) not in ['unknown', 'unavailable'] }}"
   - condition: template
-    value_template: "{{ states(!input 'humidite_interieur') not in ['unknown', 'unavailable'] }}"
+    value_template: "{{ states(humidite_interieur) not in ['unknown', 'unavailable'] }}"
   - condition: template
-    value_template: "{{ states(!input 'humidite_exterieur') not in ['unknown', 'unavailable'] }}"
+    value_template: "{{ states(humidite_exterieur) not in ['unknown', 'unavailable'] }}"
   - condition: template
-    value_template: "{{ states(!input 'climatiseur') not in ['unknown', 'unavailable'] }}"
+    value_template: "{{ states(climatiseur) not in ['unknown', 'unavailable'] }}"
   - condition: template
-    value_template: "{{ saison_actuelle in !input saisons_actives }}"
+    value_template: "{{ saison_actuelle in saisons_actives }}"
 
 action:
   - service: script.verifier_saison_active
     data:
-      saisons_actives: "{{ !input saisons_actives }}"
+      saisons_actives: "{{ saisons_actives }}"
   - condition: state
     entity_id: input_boolean.verifier_saison_active
     state: "on"
   - service: script.verifier_semaine_weekend
     data:
-      mode_semaine_weekend: "{{ !input mode_semaine_weekend }}"
+      mode_semaine_weekend: "{{ mode_semaine_weekend }}"
   - condition: state
     entity_id: input_boolean.mode_semaine_weekend
     state: "on"
@@ -182,8 +182,8 @@ action:
       temperature_max: "{{ temperature_max }}"
       humidite_min: "{{ humidite_min_finale }}"
       humidite_max: "{{ humidite_max_finale }}"
-      temperature_interieure: "{{ !input temperature_interieur }}"
-      humidite_interieure: "{{ !input humidite_interieur }}"
+      temperature_interieure: "{{ states(temperature_interieur) }}"
+      humidite_interieure: "{{ states(humidite_interieur) }}"
   - condition: state
     entity_id: input_boolean.conditions_clim_ok
     state: "on"
@@ -232,7 +232,7 @@ action:
           - condition: template
             value_template: "{{ temperature_interieure > temperature_max or temperature_interieure < temperature_min }}"
           - condition: template
-            value_template: "{{ state_attr(!input 'climatiseur', 'hvac_mode') != mode_actuel }}"
+            value_template: "{{ state_attr(climatiseur, 'hvac_mode') != mode_actuel }}"
         sequence:
           - service: climate.set_hvac_mode
             data:
@@ -246,7 +246,7 @@ action:
           - condition: template
             value_template: "{{ temperature_exterieure > (temperature_cible | float + 7) }}"
           - condition: template
-            value_template: "{{ state_attr(!input 'climatiseur', 'hvac_mode') != 'cool' }}"
+            value_template: "{{ state_attr(climatiseur, 'hvac_mode') != 'cool' }}"
         sequence:
           - service: climate.set_hvac_mode
             data:
@@ -256,7 +256,7 @@ action:
             data:
               entity_id: !input climatiseur
               temperature: >-
-                {{ [temperature_exterieure | float - 7, (!input temperature_max_preservation | float)] | min }}
+                {{ [temperature_exterieure | float - 7, (states(temperature_max_preservation) | float)] | min }}
       - conditions:
           - condition: template
             value_template: >-
@@ -265,7 +265,7 @@ action:
                 (temperature_interieure >= temperature_min and temperature_interieure <= temperature_max)
               }}
           - condition: template
-            value_template: "{{ state_attr(!input 'climatiseur', 'hvac_mode') != 'off' }}"
+            value_template: "{{ state_attr(climatiseur, 'hvac_mode') != 'off' }}"
         sequence:
           - service: climate.set_hvac_mode
             data:
@@ -275,7 +275,7 @@ action:
           - condition: template
             value_template: "{{ temperature_exterieure > (temperature_interieure + 7) }}"
           - condition: template
-            value_template: "{{ state_attr(!input 'climatiseur', 'hvac_mode') != 'cool' }}"
+            value_template: "{{ state_attr(climatiseur, 'hvac_mode') != 'cool' }}"
         sequence:
           - service: climate.set_hvac_mode
             data:
@@ -284,4 +284,4 @@ action:
           - service: climate.set_temperature
             data:
               entity_id: !input climatiseur
-              temperature: "{{ !input temperature_max_preservation }}"
+              temperature: "{{ states(temperature_max_preservation) }}"
