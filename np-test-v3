@@ -1,0 +1,162 @@
+blueprint:
+  name: Gestion automatisée des climatiseurs
+  description: Automatise les climatiseurs selon la saison, les capteurs et les plages horaires.
+  domain: automation
+  input:
+    climate_entity:
+      name: Climatiseur
+      description: Entité du climatiseur à automatiser.
+      selector:
+        entity:
+          domain: climate
+
+    indoor_temp:
+      name: Température intérieure
+      description: Capteur de température intérieure.
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+
+    outdoor_temp:
+      name: Température extérieure
+      description: Capteur de température extérieure.
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+
+    indoor_humidity:
+      name: Humidité intérieure
+      description: Capteur d'humidité intérieure.
+      selector:
+        entity:
+          domain: sensor
+          device_class: humidity
+
+    outdoor_humidity:
+      name: Humidité extérieure
+      description: Capteur d'humidité extérieure.
+      selector:
+        entity:
+          domain: sensor
+          device_class: humidity
+
+    target_temp:
+      name: Température cible
+      description: Température cible pour le climatiseur.
+      selector:
+        number:
+          min: 18
+          max: 26
+          step: 0.5
+
+    min_humidity:
+      name: Humidité minimale
+      description: Seuil minimal d'humidité pour activer le climatiseur.
+      selector:
+        number:
+          min: 30
+          max: 60
+          step: 0.1
+
+    max_humidity:
+      name: Humidité maximale
+      description: Seuil maximal d'humidité pour activer le climatiseur.
+      selector:
+        number:
+          min: 60
+          max: 90
+          step: 0.1
+
+    start_time:
+      name: Heure de début
+      description: Heure de début pour activer l'automatisation.
+      selector:
+        time:
+
+    end_time:
+      name: Heure de fin
+      description: Heure de fin pour activer l'automatisation.
+      selector:
+        time:
+
+    season:
+      name: Saison actuelle
+      description: Sélectionnez la saison pour ajuster le comportement.
+      selector:
+        select:
+          options:
+            - hiver
+            - printemps
+            - été
+            - automne
+
+mode: single
+
+trigger:
+  # Déclencheur 1 : Lorsque les capteurs de température ou d'humidité changent d'état.
+  - platform: state
+    entity_id:
+      - !input indoor_temp
+      - !input outdoor_temp
+      - !input indoor_humidity
+      - !input outdoor_humidity
+
+  # Déclencheur 2 : Vérification toutes les 5 minutes pour s'assurer que les conditions sont respectées.
+  - platform: time_pattern
+    minutes: "/5"
+
+condition:
+  # Condition 1 : S'assurer que le climatiseur est disponible et allumé.
+  - condition: state
+    entity_id: !input climate_entity
+    state: "on"
+
+  # Condition 2 : S'assurer que l'heure actuelle est comprise dans la plage horaire configurée par l'utilisateur.
+  - condition: template
+    value_template: >
+      {% set now_time = states('sensor.time') %}
+      {% set start_time = states('input_datetime.start_time') %}
+      {% set end_time = states('input_datetime.end_time') %}
+      {{ start_time <= now_time <= end_time }}
+
+action:
+  - choose:
+      # Action 1 : Si la température intérieure est inférieure à 20°C et que la saison est l'hiver, activer le mode chauffage.
+      - conditions:
+          - condition: template
+            value_template: >
+              {{ states('!input indoor_temp')|float < 20 and states('!input season') == 'hiver' }}
+        sequence:
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input climate_entity
+            data:
+              hvac_mode: "heat"
+
+      # Action 2 : Si la température extérieure est supérieure à 25°C et que la saison est l'été, activer le mode refroidissement.
+      - conditions:
+          - condition: template
+            value_template: >
+              {{ states('!input outdoor_temp')|float > 25 and states('!input season') == 'été' }}
+        sequence:
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input climate_entity
+            data:
+              hvac_mode: "cool"
+
+  # Action par défaut : Mettre à jour la température cible du climatiseur.
+  - service: climate.set_temperature
+    target:
+      entity_id: !input climate_entity
+    data:
+      temperature: !input target_temp
+
+  # Notification : Envoyer une alerte lorsque le mode du climatiseur change.
+  - service: notify.notify
+    data:
+      title: "Changement de mode de climatiseur"
+      message: >
+        Le climatiseur est passé en mode {{ state_attr('!input climate_entity', 'hvac_action') }} avec une température cible de {{ !input target_temp }} °C.
