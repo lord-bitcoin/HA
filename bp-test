@@ -172,7 +172,7 @@ action:
     data:
       mode_semaine_weekend: "{{ !input.mode_semaine_weekend }}"
   - condition: state
-    entity_id: input_boolean.mode_jour_valide
+    entity_id: input_boolean.mode_semaine_weekend
     state: "on"
   - service: script.check_conditions_clim
     data:
