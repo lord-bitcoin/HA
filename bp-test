@@ -8,7 +8,7 @@ blueprint:
     Ajuste les tolérances d'humidité en fonction de l'humidité extérieure.
     Configure des comportements spécifiques pour la semaine ou le week-end.
   domain: automation
-  inputs:
+  input:
     climatiseur:
       name: Climatiseur
       selector:
