@@ -1,0 +1,270 @@
+blueprint:
+  name: Gestion automatisée des climatiseurs 
+  description: >
+    Automatise la gestion des climatiseurs selon :
+    • La saison et les plages horaires
+    • Les températures intérieures/extérieures
+    • L'humidité
+    • Le mode semaine/weekend
+  domain: automation
+  source_url: https://github.com/votre_repo/blueprint
+  input:
+    # Section Climatiseur
+    climatiseur:
+      name: Climatiseur
+      selector:
+        entity:
+          domain: climate
+          multiple: false
+
+    # Section Capteurs
+    temperature_interieur:
+      name: Capteur de température intérieure  
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+    
+    temperature_exterieur:
+      name: Capteur de température extérieure
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+    
+    humidite_interieur:
+      name: Capteur d'humidité intérieure
+      selector:
+        entity:
+          domain: sensor
+          device_class: humidity
+    
+    humidite_exterieur:
+      name: Capteur d'humidité extérieure
+      selector:
+        entity:
+          domain: sensor
+          device_class: humidity
+    
+    # Section Configuration
+    saisons_actives:
+      name: Saisons actives
+      description: Choisissez les saisons pendant lesquelles cette automatisation sera active
+      selector:
+        select:
+          multiple: true
+          options:
+            - printemps
+            - ete 
+            - automne
+            - hiver
+    
+    mode_climatisation:
+      name: Mode de climatisation
+      selector:
+        select:
+          options:
+            - heat
+            - cool
+            - auto
+    
+    temperature_cible:
+      name: Température cible
+      selector:
+        number:
+          min: 18
+          max: 26
+          step: 0.5
+          unit_of_measurement: °C
+    
+    # Section Horaires
+    heure_debut_jour:
+      name: Heure de début de la journée
+      selector:
+        time: {}
+    
+    heure_fin_jour:
+      name: Heure de fin de la journée
+      selector:
+        time: {}
+    
+    # Section Seuils
+    seuil_tolerance:
+      name: Seuil de tolérance
+      selector:
+        number:
+          min: 0
+          max: 2
+          step: 0.1
+          unit_of_measurement: °C
+    
+    temperature_max_preservation:
+      name: Température max tolérée
+      selector:
+        number:
+          min: 24 
+          max: 30
+          step: 0.5
+          unit_of_measurement: °C
+    
+    humidite_min:
+      name: Humidité minimale
+      selector:
+        number:
+          min: 40
+          max: 50
+          step: 2.5
+          unit_of_measurement: "%"
+    
+    humidite_max:
+      name: Humidité maximale  
+      selector:
+        number:
+          min: 50
+          max: 60
+          step: 2.5
+          unit_of_measurement: "%"
+    
+    mode_semaine_weekend:
+      name: Mode semaine ou week-end
+      selector:
+        select:
+          options:
+            - semaine
+            - weekend
+
+# Définition des variables
+variables:
+  # Calcul de la saison actuelle
+  saison_actuelle: >-
+    {% set mois = now().month %}
+    {% if mois in [12, 1, 2] %}
+      hiver
+    {% elif mois in [3, 4, 5] %}
+      printemps  
+    {% elif mois in [6, 7, 8] %}
+      ete
+    {% else %}
+      automne
+    {% endif %}
+  
+  # Températures
+  temperature_interieure: "{{ states(temperature_interieur) | float(0) }}"
+  temperature_exterieure: "{{ states(temperature_exterieur) | float(0) }}"
+  humidite_interieure: "{{ states(humidite_interieur) | float(0) }}"
+  humidite_exterieure: "{{ states(humidite_exterieur) | float(0) }}"
+  
+  # Calculs des seuils
+  temperature_min: "{{ temperature_cible | float - (seuil_tolerance | float) }}"
+  temperature_max: "{{ temperature_cible | float + (seuil_tolerance | float) }}"
+  temperature_min_finale: >-
+    {{ [temperature_exterieure - 7, temperature_max_preservation] | min }}
+  
+  # Calculs humidité
+  humidite_extreme_basse: "{{ humidite_min | float - 20 }}"
+  humidite_extreme_haute: "{{ humidite_max | float + 20 }}"
+  humidite_min_marge: "{{ humidite_min | float + 2.5 }}"
+  humidite_max_marge: "{{ humidite_max | float - 2.5 }}"
+  ajustement_humidite: >-
+    {% if humidite_exterieure <= (humidite_min | float - 20) %}
+      -5
+    {% elif humidite_exterieure >= (humidite_max | float + 20) %}
+      5
+    {% else %}
+      0
+    {% endif %}
+  humidite_min_finale: "{{ humidite_min_marge + ajustement_humidite }}"
+  humidite_max_finale: "{{ humidite_max_marge + ajustement_humidite }}"
+
+# Définition des déclencheurs
+trigger:
+  - platform: state
+    entity_id: !input temperature_interieur
+  - platform: state  
+    entity_id: !input humidite_interieur
+  - platform: state
+    entity_id: !input humidite_exterieur
+  - platform: time_pattern
+    minutes: "/15"
+
+# Définition des conditions
+condition:
+  - condition: template
+    value_template: "{{ states(temperature_interieur) not in ['unknown', 'unavailable'] }}"
+  - condition: template  
+    value_template: "{{ states(temperature_exterieur) not in ['unknown', 'unavailable'] }}"
+  - condition: template
+    value_template: "{{ states(humidite_interieur) not in ['unknown', 'unavailable'] }}"
+  - condition: template
+    value_template: "{{ states(humidite_exterieur) not in ['unknown', 'unavailable'] }}"
+  - condition: template
+    value_template: "{{ states(climatiseur) not in ['unknown', 'unavailable'] }}"
+  - condition: template
+    value_template: "{{ saison_actuelle in saisons_actives }}"
+
+# Définition des actions
+action:
+  - choose:
+      # Contrôle de la température
+      - conditions:
+          - condition: template
+            value_template: "{{ temperature_interieure > temperature_max or temperature_interieure < temperature_min }}"
+        sequence:
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input climatiseur
+            data:
+              hvac_mode: "{{ mode_climatisation }}"
+          - service: climate.set_temperature 
+            target:
+              entity_id: !input climatiseur
+            data:
+              temperature: "{{ temperature_cible }}"
+      
+      # Contrôle de l'humidité
+      - conditions:
+          - condition: or
+            conditions:
+              - condition: template
+                value_template: "{{ humidite_interieure > humidite_max_finale }}"
+              - condition: template
+                value_template: "{{ humidite_interieure < humidite_min_finale }}"
+        sequence:
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input climatiseur
+            data:
+              hvac_mode: "dry"
+      
+      # Gestion températures extrêmes
+      - conditions:
+          - condition: template
+            value_template: "{{ temperature_exterieure > (temperature_cible | float + 7) }}"
+        sequence:
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input climatiseur
+            data:
+              hvac_mode: "cool"
+          - service: climate.set_temperature
+            target:
+              entity_id: !input climatiseur
+            data:
+              temperature: "{{ temperature_min_finale }}"
+      
+      # Arrêt si conditions normales
+      - conditions:
+          - condition: template
+            value_template: >-
+              {{ humidite_interieure >= humidite_min_finale and 
+                 humidite_interieure <= humidite_max_finale and
+                 temperature_interieure >= temperature_min and 
+                 temperature_interieure <= temperature_max }}
+        sequence:
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input climatiseur
+            data:
+              hvac_mode: "off"
+
+mode: single
