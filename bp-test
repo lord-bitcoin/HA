@@ -79,7 +79,7 @@ blueprint:
         number:
           min: 0
           max: 2
-          step: 0.5
+          step: 0.1
           unit_of_measurement: °C
     temperature_max_preservation:
       name: Température max tolérée
@@ -121,7 +121,7 @@ trigger:
   - platform: state
     entity_id: !input humidite_exterieur
   - platform: time_pattern
-    minutes: "/60"
+    minutes: 60
 variables:
   mode_vacances_actif: "{{ is_state('input.mode_vacances', 'on') }}"
   mode_actuel: "{{ input.mode_climatisation }}"
