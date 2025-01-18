@@ -149,26 +149,26 @@ variables:
     {% endif %}
   
   # Températures
-  temperature_interieure: "{{ states(temperature_interieur) | float(0) }}"
-  temperature_exterieure: "{{ states(temperature_exterieur) | float(0) }}"
-  humidite_interieure: "{{ states(humidite_interieur) | float(0) }}"
-  humidite_exterieure: "{{ states(humidite_exterieur) | float(0) }}"
+  temperature_interieure: "{{ states(!input temperature_interieur) | float(0) }}"
+  temperature_exterieure: "{{ states(!input temperature_exterieur) | float(0) }}"
+  humidite_interieure: "{{ states(!input humidite_interieur) | float(0) }}"
+  humidite_exterieure: "{{ states(!input humidite_exterieur) | float(0) }}"
   
   # Calculs des seuils
-  temperature_min: "{{ temperature_cible | float - (seuil_tolerance | float) }}"
-  temperature_max: "{{ temperature_cible | float + (seuil_tolerance | float) }}"
+  temperature_min: "{{ states(!input temperature_cible) | float - (states(!input seuil_tolerance) | float) }}"
+  temperature_max: "{{ states(!input temperature_cible) | float + (states(!input seuil_tolerance) | float) }}"
   temperature_min_finale: >-
-    {{ [temperature_exterieure - 7, temperature_max_preservation] | min }}
+    {{ [temperature_exterieure - 7, states(!input temperature_max_preservation) | float] | min }}
   
   # Calculs humidité
-  humidite_extreme_basse: "{{ humidite_min | float - 20 }}"
-  humidite_extreme_haute: "{{ humidite_max | float + 20 }}"
-  humidite_min_marge: "{{ humidite_min | float + 2.5 }}"
-  humidite_max_marge: "{{ humidite_max | float - 2.5 }}"
+  humidite_extreme_basse: "{{ states(!input humidite_min) | float - 20 }}"
+  humidite_extreme_haute: "{{ states(!input humidite_max) | float + 20 }}"
+  humidite_min_marge: "{{ states(!input humidite_min) | float + 2.5 }}"
+  humidite_max_marge: "{{ states(!input humidite_max) | float - 2.5 }}"
   ajustement_humidite: >-
-    {% if humidite_exterieure <= (humidite_min | float - 20) %}
+    {% if humidite_exterieure <= (states(!input humidite_min) | float - 20) %}
       -5
-    {% elif humidite_exterieure >= (humidite_max | float + 20) %}
+    {% elif humidite_exterieure >= (states(!input humidite_max) | float + 20) %}
       5
     {% else %}
       0
@@ -176,7 +176,6 @@ variables:
   humidite_min_finale: "{{ humidite_min_marge + ajustement_humidite }}"
   humidite_max_finale: "{{ humidite_max_marge + ajustement_humidite }}"
 
-# Définition des déclencheurs
 trigger:
   - platform: state
     entity_id: !input temperature_interieur
@@ -187,22 +186,20 @@ trigger:
   - platform: time_pattern
     minutes: "/15"
 
-# Définition des conditions
 condition:
   - condition: template
-    value_template: "{{ states(temperature_interieur) not in ['unknown', 'unavailable'] }}"
+    value_template: "{{ states(!input temperature_interieur) not in ['unknown', 'unavailable'] }}"
   - condition: template  
-    value_template: "{{ states(temperature_exterieur) not in ['unknown', 'unavailable'] }}"
+    value_template: "{{ states(!input temperature_exterieur) not in ['unknown', 'unavailable'] }}"
   - condition: template
-    value_template: "{{ states(humidite_interieur) not in ['unknown', 'unavailable'] }}"
+    value_template: "{{ states(!input humidite_interieur) not in ['unknown', 'unavailable'] }}"
   - condition: template
-    value_template: "{{ states(humidite_exterieur) not in ['unknown', 'unavailable'] }}"
+    value_template: "{{ states(!input humidite_exterieur) not in ['unknown', 'unavailable'] }}"
   - condition: template
-    value_template: "{{ states(climatiseur) not in ['unknown', 'unavailable'] }}"
+    value_template: "{{ states(!input climatiseur) not in ['unknown', 'unavailable'] }}"
   - condition: template
-    value_template: "{{ saison_actuelle in saisons_actives }}"
+    value_template: "{{ saison_actuelle in states(!input saisons_actives) }}"
 
-# Définition des actions
 action:
   - choose:
       # Contrôle de la température
@@ -214,12 +211,13 @@ action:
             target:
               entity_id: !input climatiseur
             data:
-              hvac_mode: "{{ mode_climatisation }}"
+              hvac_mode: "{{ states(!input mode_climatisation) }}"
           - service: climate.set_temperature 
             target:
               entity_id: !input climatiseur
             data:
-              temperature: "{{ temperature_cible }}"
+              temperature: "{{ states(!input temperature_cible) | float }}"
+
       
       # Contrôle de l'humidité
       - conditions:
