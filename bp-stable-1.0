@@ -172,7 +172,7 @@ trigger:
 
   # Déclencheur 2 : Vérification périodique toutes les minutes
   - platform: time_pattern
-    minutes: "/15"
+    minutes: "/1"
 
 # Conditions à vérifier avant d'exécuter l'action
 condition:
