@@ -167,8 +167,8 @@ trigger:
     entity_id:
       - !input indoor_temp
       - !input outdoor_temp
-      - !sensor indoor_humidty
-      - !sensor outdoor_humidity
+      - !imput indoor_humidty
+      - !imput outdoor_humidity
 
   # Déclencheur 2 : Vérification périodique toutes les minutes
   - platform: time_pattern
@@ -313,8 +313,8 @@ action:
       - conditions:
           - condition: template
             value_template: >
-              {{ states('sensor.indoor_humidity') | float < !input min_humidity | float or
-                 states('sensor.indoor_humidity') | float > !input max_humidity | float }}
+              {{ states('imput.indoor_humidity') | float < !input min_humidity | float or
+                 states('imput.indoor_humidity') | float > !input max_humidity | float }}
         sequence:
           - service: climate.set_humidity
             target:
