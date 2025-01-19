@@ -167,7 +167,7 @@ trigger:
     entity_id:
       - !input indoor_temp
       - !input outdoor_temp
-      - !input indoor_humidty
+      - !input indoor_humidity
       - !input outdoor_humidity
 
   # Déclencheur 2 : Vérification périodique toutes les minutes
