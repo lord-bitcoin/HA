@@ -169,11 +169,6 @@ trigger:
     minutes: "/1"
 
 condition:
-  # Condition 1 : S'assurer que le climatiseur est disponible et allumé.
-  - condition: state
-    entity_id: !input climate_entity
-    state: "on"
-
   # Condition 2 : S'assurer que l'heure actuelle est comprise dans la plage horaire configurée par l'utilisateur.
   - condition: template
     value_template: >
