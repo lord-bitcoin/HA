@@ -79,6 +79,7 @@ blueprint:
             - label: "off" 
               value: "0"
             - label: "on"
+              value: "1"
 
     default_fan_speed:
       name: Vitesse du ventilateur par défaut
