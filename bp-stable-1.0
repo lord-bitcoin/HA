@@ -76,9 +76,12 @@ blueprint:
       selector:
         select:
           options:
-            - "off"
-            - "vertical"
-            - "horizontal"
+            - label: 
+              value: "off"
+            - label: 
+              value: "vertical"
+            - label: 
+              value: "horizontal"
             - label: "les deux"
               value: "both"
 
@@ -164,8 +167,8 @@ trigger:
     entity_id:
       - !input indoor_temp
       - !input outdoor_temp
-      - !input indoor_humidity
-      - !input outdoor_humidity
+      - !sensor indoor_humidty
+      - !sensor outdoor_humidity
 
   # Déclencheur 2 : Vérification périodique toutes les minutes
   - platform: time_pattern
@@ -238,11 +241,6 @@ action:
               entity_id: !input climate_entity
             data:
               fan_mode: "medium"
-          - service: climate.set_humidity
-            target:
-              entity_id: !input climate_entity
-            data:
-              humidity: !input target_humidity
 
       # Automatisation pour le printemps
       - conditions:
@@ -265,11 +263,6 @@ action:
               entity_id: !input climate_entity
             data:
               fan_mode: "medium"
-          - service: climate.set_humidity
-            target:
-              entity_id: !input climate_entity
-            data:
-              humidity: !input target_humidity
 
       # Automatisation pour l'été
       - conditions:
@@ -292,11 +285,6 @@ action:
               entity_id: !input climate_entity
             data:
               fan_mode: "medium"
-          - service: climate.set_humidity
-            target:
-              entity_id: !input climate_entity
-            data:
-              humidity: !input target_humidity
 
       # Automatisation pour l'automne
       - conditions:
@@ -319,6 +307,14 @@ action:
               entity_id: !input climate_entity
             data:
               fan_mode: "medium"
+
+  # Ajustement de l'humidité si elle diffère de la cible
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: >
+              {{ states(sensor.indoor_humidty) | float != input.target_humidity | float }}
+        sequence:
           - service: climate.set_humidity
             target:
               entity_id: !input climate_entity
