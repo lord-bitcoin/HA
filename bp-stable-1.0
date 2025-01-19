@@ -313,8 +313,8 @@ action:
       - conditions:
           - condition: template
             value_template: >
-              {{ states('input_indoor_humidity') | float(default=0) < (states('input_number.min_humidity') | float(default=0)) or 
-                 states('input_indoor_humidity') | float(default=0) > (states('input_number.max_humidity') | float(default=0)) }}
+              {{ states('input.indoor_humidity') | float < (states('input.min_humidity') | float) or 
+                 states('input.indoor_humidity') | float > (states('input.max_humidity') | float) }}
         sequence:
           - service: climate.set_humidity
             target:
