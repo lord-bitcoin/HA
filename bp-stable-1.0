@@ -187,12 +187,12 @@ condition:
   # Condition 2 : Vérification du jour en fonction du mode sélectionné
   - condition: template
     value_template: >
-      {% set today = now().weekday() %}  # Lundi = 0, Dimanche = 6
+      {% set today = now().weekday() %}  # Lundi = 1, Dimanche = 7
       {% if 'mode_jours' in input %}
         {% if input.mode_jours == 'semaine' %}
-          {{ today in [0, 1, 2, 3, 4] }}
+          {{ today in [1, 2, 3, 4, 5] }}
         {% elif input.mode_jours == 'weekend' %}
-          {{ today in [5, 6] }}
+          {{ today in [6, 7] }}
         {% elif input.mode_jours == 'tous' %}
           true
         {% else %}
