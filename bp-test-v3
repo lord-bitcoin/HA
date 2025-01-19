@@ -2,7 +2,7 @@ blueprint:
   name: Gestion automatisée des climatiseurs
   description: Automatise les climatiseurs selon la saison, les capteurs et les plages horaires.
   domain: automation
-  inputs:
+  input:
     climate_entity:
       name: Climatiseur
       description: Entité du climatiseur à automatiser.
@@ -166,7 +166,7 @@ trigger:
 
   # Déclencheur 2 : Vérification toutes les 5 minutes pour s'assurer que les conditions sont respectées.
   - platform: time_pattern
-    minutes: "/15"
+    minutes: "/1"
 
 condition:
   # Condition 1 : S'assurer que le climatiseur est disponible et allumé.
