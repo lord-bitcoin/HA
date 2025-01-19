@@ -76,9 +76,12 @@ blueprint:
       selector:
         select:
           options:
-            - "off"
-            - "vertical"
-            - "horizontal"
+            - label: "off"
+              value: "off"
+            - label: "vertical"
+              value: "vertical"
+            - label: "horizontal"
+              value: "horizontal"
             - label: "les deux"
               value: "both"
 
