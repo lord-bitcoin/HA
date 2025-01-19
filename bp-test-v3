@@ -76,12 +76,9 @@ blueprint:
       selector:
         select:
           options:
-            - label: "off"
-              value: "off"
-            - label: "vertical"
-              value: "vertical"
-            - label: "horizontal"
-              value: "horizontal"
+            - "off"
+            - "vertical"
+            - "horizontal"
             - label: "les deux"
               value: "both"
 
@@ -241,6 +238,11 @@ action:
               entity_id: !input climate_entity
             data:
               fan_mode: "medium"
+          - service: climate.set_humidity
+            target:
+              entity_id: !input climate_entity
+            data:
+              humidity: !input target_humidity
 
       # Automatisation pour le printemps
       - conditions:
@@ -263,6 +265,11 @@ action:
               entity_id: !input climate_entity
             data:
               fan_mode: "medium"
+          - service: climate.set_humidity
+            target:
+              entity_id: !input climate_entity
+            data:
+              humidity: !input target_humidity
 
       # Automatisation pour l'été
       - conditions:
@@ -285,6 +292,11 @@ action:
               entity_id: !input climate_entity
             data:
               fan_mode: "medium"
+          - service: climate.set_humidity
+            target:
+              entity_id: !input climate_entity
+            data:
+              humidity: !input target_humidity
 
       # Automatisation pour l'automne
       - conditions:
@@ -307,14 +319,6 @@ action:
               entity_id: !input climate_entity
             data:
               fan_mode: "medium"
-
-  # Ajustement de l'humidité si elle diffère de la cible
-  - choose:
-      - conditions:
-          - condition: template
-            value_template: >
-              {{ states('input_number.indoor_humidity') | float != states('input_number.target_humidity') | float }}
-        sequence:
           - service: climate.set_humidity
             target:
               entity_id: !input climate_entity
