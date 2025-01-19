@@ -202,15 +202,6 @@ condition:
         false
       {% endif %}
 
-  # Vérification des seuils d'humidité avec tolérance
-  - condition: template
-    value_template: >
-      {% set indoor_humidity = states(!input indoor_humidity) | float %}
-      {% set target_humidity = !input target_humidity | float %}
-      {% set tolerance = !input temp_tolerance | float %}
-      {{ indoor_humidity < (target_humidity - tolerance) or
-         indoor_humidity > (target_humidity + tolerance) }}
-
 # Actions à exécuter en fonction des conditions
 action:
   # Variable pour déterminer la saison actuelle
@@ -317,20 +308,35 @@ action:
             data:
               fan_mode: "medium"
 
-        # Si l'humidité intérieure est hors des limites (trop basse ou trop haute)
+      # Si l'humidité intérieure est trop basse
       - conditions:
           - condition: template
             value_template: >
               {% set indoor_humidity = states(!input indoor_humidity) | float %}
               {% set target_humidity = !input target_humidity | float %}
               {% set tolerance = !input temp_tolerance | float %}
-              {{ indoor_humidity < (target_humidity - tolerance) or
-                 indoor_humidity > (target_humidity + tolerance) }}
+              {{ indoor_humidity < (target_humidity - tolerance) }}
         sequence:
           - service: climate.set_humidity
             target:
               entity_id: !input climate_entity
             data:
-              humidity: !input target_humidity
+              humidity: "{{ target_humidity | float + 3 }}"
+
+      # Si l'humidité intérieure est trop haute
+      - conditions:
+          - condition: template
+            value_template: >
+              {% set indoor_humidity = states(!input indoor_humidity) | float %}
+              {% set target_humidity = !input target_humidity | float %}
+              {% set tolerance = !input temp_tolerance | float %}
+              {{ indoor_humidity > (target_humidity + tolerance) }}
+        sequence:
+          - service: climate.set_humidity
+            target:
+              entity_id: !input climate_entity
+            data:
+              humidity: "{{ target_humidity | float - 3 }}"
+
 
  
