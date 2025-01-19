@@ -76,10 +76,10 @@ blueprint:
       selector:
         select:
           options:
-            - 0 # off
-            - 1 # vertical
-            - 2 # horizontal
-            - 3 # both
+            - 1 # off
+            - 2 # vertical
+            - 3 # horizontal
+            - 4 # both
 
     default_fan_speed:
       name: Vitesse du ventilateur par défaut
