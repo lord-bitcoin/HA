@@ -49,25 +49,44 @@ blueprint:
         number:
           min: 18
           max: 26
-          step: 0.5
+          step: 0.1
+
+    temp_tolerance:
+      name: Tolérance de température
+      description: Tolérance pour éviter les cycles courts (en °C).
+      selector:
+        number:
+          min: 0
+          max: 2
+          step: 0.1
+
+    default_mode:
+      name: Mode par défaut
+      description: Mode HVAC par défaut si aucune condition n'est remplie.
+      selector:
+        select:
+          options:
+            - heat
+            - cool
+            - off
 
     min_humidity:
       name: Humidité minimale
       description: Seuil minimal d'humidité pour activer le climatiseur.
       selector:
         number:
-          min: 30
-          max: 60
-          step: 0.1
+          min: 40
+          max: 50
+          step: 0.5
 
     max_humidity:
       name: Humidité maximale
       description: Seuil maximal d'humidité pour activer le climatiseur.
       selector:
         number:
-          min: 60
-          max: 90
-          step: 0.1
+          min: 50
+          max: 60
+          step: 0.5
 
     start_time:
       name: Heure de début
@@ -120,7 +139,7 @@ trigger:
 
   # Déclencheur 2 : Vérification toutes les 5 minutes pour s'assurer que les conditions sont respectées.
   - platform: time_pattern
-    minutes: "/5"
+    minutes: "/15"
 
 condition:
   # Condition 1 : S'assurer que le climatiseur est disponible et allumé.
@@ -154,7 +173,7 @@ action:
               - conditions:
                   - condition: template
                     value_template: >
-                      {{ states('!input indoor_temp')|float < 20 }}
+                      {{ states('!input outdoor_temp')|float < (states('!input target_temp')|float - states('!input temp_tolerance')|float) }}
                 sequence:
                   - service: climate.set_hvac_mode
                     target:
@@ -172,7 +191,7 @@ action:
               - conditions:
                   - condition: template
                     value_template: >
-                      {{ states('!input indoor_temp')|float > 22 }}
+                      {{ states('!input indoor_temp')|float > (states('!input target_temp')|float + states('!input temp_tolerance')|float) }}
                 sequence:
                   - service: climate.set_hvac_mode
                     target:
@@ -190,7 +209,7 @@ action:
               - conditions:
                   - condition: template
                     value_template: >
-                      {{ states('!input outdoor_temp')|float > 25 }}
+                      {{ states('!input outdoor_temp')|float > (states('!input target_temp')|float + states('!input temp_tolerance')|float) }}
                 sequence:
                   - service: climate.set_hvac_mode
                     target:
@@ -208,7 +227,7 @@ action:
               - conditions:
                   - condition: template
                     value_template: >
-                      {{ states('!input indoor_temp')|float < 21 }}
+                      {{ states('!input outdoor_temp')|float < (states('!input target_temp')|float - states('!input temp_tolerance')|float) }}
                 sequence:
                   - service: climate.set_hvac_mode
                     target:
@@ -216,7 +235,14 @@ action:
                     data:
                       hvac_mode: "heat"
 
-  # Action par défaut : Mettre à jour la température cible du climatiseur.
+  # Action par défaut : Utiliser le mode par défaut configuré par l'utilisateur.
+  - service: climate.set_hvac_mode
+    target:
+      entity_id: !input climate_entity
+    data:
+      hvac_mode: !input default_mode
+
+  # Mettre à jour la température cible du climatiseur.
   - service: climate.set_temperature
     target:
       entity_id: !input climate_entity
