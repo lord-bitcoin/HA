@@ -68,7 +68,6 @@ blueprint:
           options:
             - heat
             - cool
-            - off
 
     min_humidity:
       name: Humidité minimale
@@ -100,30 +99,15 @@ blueprint:
       selector:
         time:
 
-    season:
-      name: Saison actuelle
-      description: Sélectionnez la saison pour ajuster le comportement.
+    mode_jours:
+      name: Mode jours
+      description: Activer pour semaine, week-end, ou tous les jours.
       selector:
         select:
           options:
-            - hiver
-            - printemps
-            - été
-            - automne
-
-    days:
-      name: Jours de fonctionnement
-      description: Sélectionnez les jours pour lesquels cette automatisation est active.
-      selector:
-        select:
-          options:
-            - lundi
-            - mardi
-            - mercredi
-            - jeudi
-            - vendredi
-            - samedi
-            - dimanche
+            - semaine
+            - weekend
+            - tous
 
 mode: single
 
@@ -154,19 +138,38 @@ condition:
       {% set end_time = states('input_datetime.end_time') %}
       {{ start_time <= now_time <= end_time }}
 
-  # Condition 3 : Vérifier si le jour actuel est dans la sélection de jours configurés.
+  # Condition 3 : Activer selon le jour de la semaine basé sur le mode choisi.
   - condition: template
     value_template: >
-      {% set today = now().strftime('%A').lower() %}
-      {{ today in !input days }}
+      {% set today = now().weekday() %}  # Lundi = 0, Dimanche = 6
+      {% if !input mode_jours == 'semaine' %}
+        {{ today in [0, 1, 2, 3, 4] }}
+      {% elif !input mode_jours == 'weekend' %}
+        {{ today in [5, 6] }}
+      {% else %}
+        true
+      {% endif %}
 
 action:
+  - variables:
+      saison_actuelle: >-
+        {% set today = now().date() %}
+        {% if today >= today.replace(month=3, day=20) and today <= today.replace(month=6, day=20) %}
+          printemps
+        {% elif today >= today.replace(month=6, day=21) and today <= today.replace(month=9, day=22) %}
+          été
+        {% elif today >= today.replace(month=9, day=23) and today <= today.replace(month=12, day=20) %}
+          automne
+        {% else %}
+          hiver
+        {% endif %}
+
   - choose:
       # Action 1 : Automatisation pour l'hiver
       - conditions:
           - condition: template
             value_template: >
-              {{ states('!input season') == 'hiver' }}
+              {{ saison_actuelle == 'hiver' }}
         sequence:
           - choose:
               - conditions:
@@ -184,7 +187,7 @@ action:
       - conditions:
           - condition: template
             value_template: >
-              {{ states('!input season') == 'printemps' }}
+              {{ saison_actuelle == 'printemps' }}
         sequence:
           - choose:
               - conditions:
@@ -202,7 +205,7 @@ action:
       - conditions:
           - condition: template
             value_template: >
-              {{ states('!input season') == 'été' }}
+              {{ saison_actuelle == 'été' }}
         sequence:
           - choose:
               - conditions:
@@ -220,7 +223,7 @@ action:
       - conditions:
           - condition: template
             value_template: >
-              {{ states('!input season') == 'automne' }}
+              {{ saison_actuelle == 'automne' }}
         sequence:
           - choose:
               - conditions:
