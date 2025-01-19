@@ -167,8 +167,46 @@ trigger:
   # Déclencheur 2 : Vérification toutes les 5 minutes pour s'assurer que les conditions sont respectées.
   - platform: time_pattern
     minutes: "/1"
-    
+
+condition:
+  # Condition 2 : S'assurer que l'heure actuelle est comprise dans la plage horaire configurée par l'utilisateur.
+  - condition: template
+    value_template: >
+      {% set now_time = states('sensor.time') %}
+      {% set start_time = states('input_datetime.start_time') %}
+      {% set end_time = states('input_datetime.end_time') %}
+      {{ start_time <= now_time <= end_time }}
+
+  # Condition 3 : Activer selon le jour de la semaine basé sur le mode choisi.
+  - condition: template
+    value_template: >
+      {% set today = now().weekday() %}  # Lundi = 0, Dimanche = 6
+      {% if input is defined and 'mode_jours' in input %}
+        {% if input.mode_jours == 'semaine' %}
+          {{ today in [0, 1, 2, 3, 4] }}
+        {% elif input.mode_jours == 'weekend' %}
+          {{ today in [5, 6] }}
+        {% else %}
+          false
+        {% endif %}
+      {% else %}
+        false
+      {% endif %}
+
 action:
+  - variables:
+      saison_actuelle: >-
+          {% set today = now().date() %}
+          {% if today >= today.replace(month=3, day=20) and today <= today.replace(month=6, day=20) %}
+            printemps
+          {% elif today >= today.replace(month=6, day=21) and today <= today.replace(month=9, day=22) %}
+            été
+          {% elif today >= today.replace(month=9, day=23) and today <= today.replace(month=12, day=20) %}
+            automne
+          {% else %}
+            hiver
+          {% endif %}
+
   - choose:
       # Action 1 : Automatisation pour l'hiver
       - conditions:
@@ -180,7 +218,7 @@ action:
               - conditions:
                   - condition: template
                     value_template: >
-                      {{ states(input.outdoor_temp)|float < (states(input.target_temp)|float - states(input.temp_tolerance)|float) }}
+                      {{ states('input.outdoor_temp')|float < (states('input.target_temp')|float - states('input.temp_tolerance')|float) }}
                 sequence:
                   - service: climate.set_hvac_mode
                     target:
@@ -203,7 +241,7 @@ action:
               - conditions:
                   - condition: template
                     value_template: >
-                      {{ states(input.indoor_temp)|float > (states(input.target_temp)|float + states(input.temp_tolerance)|float) }}
+                      {{ states('input.indoor_temp')|float > (states('input.target_temp')|float + states('input.temp_tolerance')|float) }}
                 sequence:
                   - service: climate.set_hvac_mode
                     target:
@@ -226,7 +264,7 @@ action:
               - conditions:
                   - condition: template
                     value_template: >
-                      {{ states(input.outdoor_temp)|float > (states(input.target_temp)|float + states(input.temp_tolerance)|float) }}
+                      {{ states('input.outdoor_temp')|float > (states('input.target_temp')|float + states('input.temp_tolerance')|float) }}
                 sequence:
                   - service: climate.set_hvac_mode
                     target:
@@ -249,7 +287,7 @@ action:
               - conditions:
                   - condition: template
                     value_template: >
-                      {{ states(input.outdoor_temp)|float < (states(input.target_temp)|float - states(input.temp_tolerance)|float) }}
+                      {{ states('input.outdoor_temp')|float < (states('input.target_temp')|float - states('input.temp_tolerance')|float) }}
                 sequence:
                   - service: climate.set_hvac_mode
                     target:
@@ -267,7 +305,7 @@ action:
       - conditions:
           - condition: template
             value_template: >
-              {{ states(input.indoor_humidity)|float != (states(input.target_humidity)|float) }}
+              {{ states('input.indoor_humidity')|float != states('input.target_humidity')|float }}
         sequence:
           - service: climate.set_humidity
             target:
