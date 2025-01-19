@@ -1,0 +1,84 @@
+blueprint:
+  name: Mise à jour forcée d'entités (jusqu'à 10)
+  description: >
+    Blueprint pour créer un script/automatisation qui force la mise à jour de 2 à 10 entités via `homeassistant.update_entity`.
+    Permet également de définir un délai facultatif avant d'exécuter des actions après la mise à jour.
+  domain: automation
+  input:
+    entity_1:
+      name: Première entité
+      description: Première entité à mettre à jour (obligatoire).
+      selector:
+        entity: {}
+    entity_2:
+      name: Deuxième entité
+      description: Deuxième entité à mettre à jour (obligatoire).
+      selector:
+        entity: {}
+    entity_3:
+      name: Troisième entité (facultative)
+      description: Troisième entité à mettre à jour.
+      default: ""
+      selector:
+        entity: {}
+    entity_4:
+      name: Quatrième entité (facultative)
+      description: Quatrième entité à mettre à jour.
+      default: ""
+      selector:
+        entity: {}
+    entity_5:
+      name: Cinquième entité (facultative)
+      description: Cinquième entité à mettre à jour.
+      default: ""
+      selector:
+        entity: {}
+    entity_6:
+      name: Sixième entité (facultative)
+      description: Sixième entité à mettre à jour.
+      default: ""
+      selector:
+        entity: {}
+    entity_7:
+      name: Septième entité (facultative)
+      description: Septième entité à mettre à jour.
+      default: ""
+      selector:
+        entity: {}
+    entity_8:
+      name: Huitième entité (facultative)
+      description: Huitième entité à mettre à jour.
+      default: ""
+      selector:
+        entity: {}
+    entity_9:
+      name: Neuvième entité (facultative)
+      description: Neuvième entité à mettre à jour.
+      default: ""
+      selector:
+        entity: {}
+    entity_10:
+      name: Dixième entité (facultative)
+      description: Dixième entité à mettre à jour.
+      default: ""
+      selector:
+        entity: {}
+    delay:
+      name: Délai entre la mise à jour et l'action
+      description: Délai facultatif avant d'exécuter l'action (au format HH:MM:SS).
+      default: "00:00:02"
+      selector:
+        text: {}
+    notification_message:
+      name: Message de notification (facultatif)
+      description: Message à envoyer après la mise à jour (laisser vide pour ne rien envoyer).
+      default: ""
+      selector:
+        text: {}
+
+mode: single
+max_exceeded: silent
+
+trigger:
+  - platform: time_pattern
+    minutes: /2
