@@ -169,6 +169,11 @@ trigger:
     minutes: "/1"
 
 condition:
+  # Condition 1 : S'assurer que le climatiseur est disponible et allumé.
+  - condition: state
+    entity_id: !input climate_entity
+    state: "on"
+
   # Condition 2 : S'assurer que l'heure actuelle est comprise dans la plage horaire configurée par l'utilisateur.
   - condition: template
     value_template: >
@@ -190,9 +195,6 @@ condition:
 action:
   - variables:
       saison_actuelle: >-
-        {% if inputs.manual_season != "" %}
-          {{ inputs.manual_season }}
-        {% else %}
           {% set today = now().date() %}
           {% if today >= today.replace(month=3, day=20) and today <= today.replace(month=6, day=20) %}
             printemps
@@ -203,7 +205,6 @@ action:
           {% else %}
             hiver
           {% endif %}
-        {% endif %}
 
   - choose:
       # Action 1 : Automatisation pour l'hiver
