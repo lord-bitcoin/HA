@@ -169,6 +169,9 @@ trigger:
       - !input outdoor_temp
       - !input indoor_humidity
       - !input outdoor_humidity
+      - !input start_time
+      - !input end_time
+      - !input mode_jours
 
   # Déclencheur 2 : Vérification périodique toutes les minutes
   - platform: time_pattern
