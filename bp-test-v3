@@ -216,9 +216,6 @@ action:
         sequence:
           - choose:
               - conditions:
-                  - condition: template
-                    value_template: >
-                      {{ states('input.outdoor_temp')|float < (states('input.target_temp')|float - states('input.temp_tolerance')|float) }}
                 sequence:
                   - service: climate.set_hvac_mode
                     target:
@@ -230,6 +227,9 @@ action:
                       entity_id: !input climate_entity
                     data:
                       swing_mode: "1"
+                  - service: climate.set_fan_speed
+                    target:
+                      fan_speed: medium
 
       # Action 2 : Automatisation pour le printemps
       - conditions:
@@ -238,10 +238,6 @@ action:
               {{ saison_actuelle == 'printemps' }}
         sequence:
           - choose:
-              - conditions:
-                  - condition: template
-                    value_template: >
-                      {{ states('input.indoor_temp')|float > (states('input.target_temp')|float + states('input.temp_tolerance')|float) }}
                 sequence:
                   - service: climate.set_hvac_mode
                     target:
@@ -253,6 +249,9 @@ action:
                       entity_id: !input climate_entity
                     data:
                       swing_mode: "1"
+                  - service: climate.set_fan_speed
+                    target:
+                      fan_speed: medium
 
       # Action 3 : Automatisation pour l'été
       - conditions:
@@ -261,10 +260,6 @@ action:
               {{ saison_actuelle == 'été' }}
         sequence:
           - choose:
-              - conditions:
-                  - condition: template
-                    value_template: >
-                      {{ states('input.outdoor_temp')|float > (states('input.target_temp')|float + states('input.temp_tolerance')|float) }}
                 sequence:
                   - service: climate.set_hvac_mode
                     target:
@@ -276,6 +271,9 @@ action:
                       entity_id: !input climate_entity
                     data:
                       swing_mode: "1"
+                  - service: climate.set_fan_speed
+                    target:
+                      fan_speed: medium
 
       # Action 4 : Automatisation pour l'automne
       - conditions:
@@ -285,9 +283,6 @@ action:
         sequence:
           - choose:
               - conditions:
-                  - condition: template
-                    value_template: >
-                      {{ states('input.outdoor_temp')|float < (states('input.target_temp')|float - states('input.temp_tolerance')|float) }}
                 sequence:
                   - service: climate.set_hvac_mode
                     target:
@@ -299,6 +294,9 @@ action:
                       entity_id: !input climate_entity
                     data:
                       swing_mode: "1"
+                  - service: climate.set_fan_speed
+                    target:
+                      fan_speed: medium
 
   # Action pour ajuster l'humidité cible
   - choose:
