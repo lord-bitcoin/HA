@@ -305,7 +305,8 @@ action:
       - conditions:
           - condition: template
             value_template: >
-              {{ states(input.indoor_humidity)|float != input.target_humidity }}
+              {{ states(input.indoor_humidity)|float != (states(input.target_humidity)|float) }}
+
         sequence:
           - service: climate.set_humidity
             target:
