@@ -69,18 +69,6 @@ blueprint:
             - heat
             - cool
 
-    default_swing_mode:
-      name: Mode oscillation par défaut
-      description: Mode de swing par défaut du climatiseur.
-      selector:
-        select:
-          options:
-            - auto
-            - both
-            - horizontal
-            - vertical
-            - off
-
     default_fan_speed:
       name: Vitesse du ventilateur par défaut
       description: Vitesse du ventilateur par défaut.
@@ -90,7 +78,6 @@ blueprint:
             - low
             - medium
             - high
-            - auto
 
     manual_season:
       name: Saison manuelle (optionnelle)
@@ -303,12 +290,6 @@ action:
       entity_id: !input climate_entity
     data:
       hvac_mode: !input default_mode
-
-  - service: climate.set_swing_mode
-    target:
-      entity_id: !input climate_entity
-    data:
-      swing_mode: !input default_swing_mode
 
   - service: climate.set_fan_mode
     target:
