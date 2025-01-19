@@ -1,0 +1,330 @@
+blueprint:
+  name: Gestion automatisée des climatiseurs
+  description: Automatise les climatiseurs selon la saison, les capteurs et les plages horaires.
+  domain: automation
+  input:
+    climate_entity:
+      name: Climatiseur
+      description: Entité du climatiseur à automatiser.
+      selector:
+        entity:
+          domain: climate
+
+    indoor_temp:
+      name: Température intérieure
+      description: Capteur de température intérieure.
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+
+    outdoor_temp:
+      name: Température extérieure
+      description: Capteur de température extérieure.
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+
+    indoor_humidity:
+      name: Humidité intérieure
+      description: Capteur d'humidité intérieure.
+      selector:
+        entity:
+          domain: sensor
+          device_class: humidity
+
+    outdoor_humidity:
+      name: Humidité extérieure
+      description: Capteur d'humidité extérieure.
+      selector:
+        entity:
+          domain: sensor
+          device_class: humidity
+
+    target_temp:
+      name: Température cible
+      description: Température cible pour le climatiseur.
+      selector:
+        number:
+          min: 16
+          max: 28
+          step: 0.1
+
+    temp_tolerance:
+      name: Tolérance de température
+      description: Tolérance pour éviter les cycles courts (en °C).
+      selector:
+        number:
+          min: 0
+          max: 2
+          step: 0.1
+
+    default_mode:
+      name: Mode par défaut
+      description: Mode HVAC par défaut si aucune condition n'est remplie.
+      selector:
+        select:
+          options:
+            - heat
+            - cool
+            - auto
+
+    default_swing_mode:
+      name: Mode oscillation par défaut
+      description: Mode de swing par défaut du climatiseur.
+      selector:
+        select:
+          options:
+            - label: "off"
+              value: "off"
+            - label: "vertical"
+              value: "vertical"
+            - label: "horizontal"
+              value: "horizontal"
+            - label: "les deux"
+              value: "both"
+
+    default_fan_speed:
+      name: Vitesse du ventilateur par défaut
+      description: Vitesse du ventilateur par défaut.
+      selector:
+        select:
+          options:
+            - low
+            - medium low
+            - medium
+            - medium high
+            - high
+            - auto
+
+    manual_season:
+      name: Saison manuelle (optionnelle)
+      description: Sélectionner une saison manuellement si souhaité.
+      selector:
+        select:
+          options:
+            - hiver
+            - printemps
+            - été
+            - automne
+
+    min_humidity:
+      name: Humidité minimale
+      description: Seuil minimal d'humidité pour activer le climatiseur.
+      selector:
+        number:
+          min: 40
+          max: 50
+          step: 0.5
+
+    max_humidity:
+      name: Humidité maximale
+      description: Seuil maximal d'humidité pour activer le climatiseur.
+      selector:
+        number:
+          min: 50
+          max: 60
+          step: 0.5
+
+    target_humidity:
+      name: Humidité cible
+      description: Niveau d'humidité cible à atteindre.
+      selector:
+        number:
+          min: 30
+          max: 70
+          step: 1
+
+    start_time:
+      name: Heure de début
+      description: Heure de début pour activer l'automatisation.
+      selector:
+        time:
+
+    end_time:
+      name: Heure de fin
+      description: Heure de fin pour activer l'automatisation.
+      selector:
+        time:
+
+    mode_jours:
+      name: Mode jours
+      description: Activer pour semaine, week-end, ou tous les jours.
+      selector:
+        select:
+          options:
+            - semaine
+            - weekend
+            - tous
+
+mode: single
+
+# Déclencheurs de l'automatisation
+trigger:
+  # Déclencheur 1 : Changement d'état des capteurs
+  - platform: state
+    entity_id:
+      - !input indoor_temp
+      - !input outdoor_temp
+      - !input indoor_humidity
+      - !input outdoor_humidity
+
+  # Déclencheur 2 : Vérification périodique toutes les minutes
+  - platform: time_pattern
+    minutes: "/15"
+
+# Conditions à vérifier avant d'exécuter l'action
+condition:
+  # Condition 1 : Vérification de la plage horaire définie par l'utilisateur
+  - condition: template
+    value_template: >
+      {% set now_time = states('sensor.time') %}
+      {% set start_time = states('input_datetime.start_time') %}
+      {% set end_time = states('input_datetime.end_time') %}
+      {{ start_time <= now_time <= end_time }}
+
+  # Condition 2 : Vérification du jour en fonction du mode sélectionné
+  - condition: template
+    value_template: >
+      {% set today = now().weekday() %}  # Lundi = 0, Dimanche = 6
+      {% if 'mode_jours' in input %}
+        {% if input.mode_jours == 'semaine' %}
+          {{ today in [0, 1, 2, 3, 4] }}
+        {% elif input.mode_jours == 'weekend' %}
+          {{ today in [5, 6] }}
+        {% elif input.mode_jours == 'tous' %}
+          true
+        {% else %}
+          false
+        {% endif %}
+      {% else %}
+        false
+      {% endif %}
+
+# Actions à exécuter en fonction des conditions
+action:
+  # Variable pour déterminer la saison actuelle
+  - variables:
+      saison_actuelle: >-
+        {% set today = now().date() %}
+        {% if today >= today.replace(month=3, day=20) and today <= today.replace(month=6, day=20) %}
+          printemps
+        {% elif today >= today.replace(month=6, day=21) and today <= today.replace(month=9, day=22) %}
+          été
+        {% elif today >= today.replace(month=9, day=23) and today <= today.replace(month=12, day=20) %}
+          automne
+        {% else %}
+          hiver
+        {% endif %}
+
+  # Choix de l'action selon la saison actuelle
+  - choose:
+      # Automatisation pour l'hiver
+      - conditions:
+          - condition: template
+            value_template: >
+              {{ saison_actuelle == 'hiver' }}
+        sequence:
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input climate_entity
+            data:
+              hvac_mode: "heat"
+          - service: climate.set_swing_mode
+            target:
+              entity_id: !input climate_entity
+            data:
+              swing_mode: "vertical"
+          - service: climate.set_fan_mode
+            target:
+              entity_id: !input climate_entity
+            data:
+              fan_mode: "medium"
+
+      # Automatisation pour le printemps
+      - conditions:
+          - condition: template
+            value_template: >
+              {{ saison_actuelle == 'printemps' }}
+        sequence:
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input climate_entity
+            data:
+              hvac_mode: "cool"
+          - service: climate.set_swing_mode
+            target:
+              entity_id: !input climate_entity
+            data:
+              swing_mode: "vertical"
+          - service: climate.set_fan_mode
+            target:
+              entity_id: !input climate_entity
+            data:
+              fan_mode: "medium"
+
+      # Automatisation pour l'été
+      - conditions:
+          - condition: template
+            value_template: >
+              {{ saison_actuelle == 'été' }}
+        sequence:
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input climate_entity
+            data:
+              hvac_mode: "cool"
+          - service: climate.set_swing_mode
+            target:
+              entity_id: !input climate_entity
+            data:
+              swing_mode: "vertical"
+          - service: climate.set_fan_mode
+            target:
+              entity_id: !input climate_entity
+            data:
+              fan_mode: "medium"
+
+      # Automatisation pour l'automne
+      - conditions:
+          - condition: template
+            value_template: >
+              {{ saison_actuelle == 'automne' }}
+        sequence:
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input climate_entity
+            data:
+              hvac_mode: "heat"
+          - service: climate.set_swing_mode
+            target:
+              entity_id: !input climate_entity
+            data:
+              swing_mode: "vertical"
+          - service: climate.set_fan_mode
+            target:
+              entity_id: !input climate_entity
+            data:
+              fan_mode: "medium"
+
+  # Ajustement de l'humidité si elle diffère de la cible
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: >
+              {{ states('input_indoor_humidity') | float < (input_min_humidity | float) or 
+                 states('input_indoor_humidity') | float > (input_max_humidity | float) }}
+        sequence:
+          - service: climate.set_humidity
+            target:
+              entity_id: !input climate_entity
+            data:
+              humidity: !input target_humidity
+
+  # Mise à jour de la température cible
+  - service: climate.set_temperature
+    target:
+      entity_id: !input climate_entity
+    data:
+      temperature: !input target_temp
