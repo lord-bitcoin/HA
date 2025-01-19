@@ -186,10 +186,10 @@ condition:
   - condition: template
     value_template: >
       {% set today = now().weekday() %}  # Lundi = 0, Dimanche = 6
-      {% if inputs is defined and 'mode_jours' in inputs %}
-        {% if inputs.mode_jours == 'semaine' %}
+      {% if input is defined and 'mode_jours' in input %}
+        {% if input.mode_jours == 'semaine' %}
           {{ today in [0, 1, 2, 3, 4] }}
-        {% elif inputs.mode_jours == 'weekend' %}
+        {% elif input.mode_jours == 'weekend' %}
           {{ today in [5, 6] }}
         {% else %}
           false
@@ -223,7 +223,7 @@ action:
               - conditions:
                   - condition: template
                     value_template: >
-                      {{ states(inputs.outdoor_temp)|float < (states(inputs.target_temp)|float - states(inputs.temp_tolerance)|float) }}
+                      {{ states(input.outdoor_temp)|float < (states(input.target_temp)|float - states(input.temp_tolerance)|float) }}
                 sequence:
                   - service: climate.set_hvac_mode
                     target:
@@ -246,7 +246,7 @@ action:
               - conditions:
                   - condition: template
                     value_template: >
-                      {{ states(inputs.indoor_temp)|float > (states(inputs.target_temp)|float + states(inputs.temp_tolerance)|float) }}
+                      {{ states(input.indoor_temp)|float > (states(input.target_temp)|float + states(input.temp_tolerance)|float) }}
                 sequence:
                   - service: climate.set_hvac_mode
                     target:
@@ -269,7 +269,7 @@ action:
               - conditions:
                   - condition: template
                     value_template: >
-                      {{ states(inputs.outdoor_temp)|float > (states(inputs.target_temp)|float + states(inputs.temp_tolerance)|float) }}
+                      {{ states(input.outdoor_temp)|float > (states(input.target_temp)|float + states(input.temp_tolerance)|float) }}
                 sequence:
                   - service: climate.set_hvac_mode
                     target:
@@ -292,7 +292,7 @@ action:
               - conditions:
                   - condition: template
                     value_template: >
-                      {{ states(inputs.outdoor_temp)|float < (states(inputs.target_temp)|float - states(inputs.temp_tolerance)|float) }}
+                      {{ states(input.outdoor_temp)|float < (states(input.target_temp)|float - states(input.temp_tolerance)|float) }}
                 sequence:
                   - service: climate.set_hvac_mode
                     target:
@@ -310,13 +310,13 @@ action:
       - conditions:
           - condition: template
             value_template: >
-              {{ states(inputs.indoor_humidity)|float != inputs.target_humidity }}
+              {{ states(input.indoor_humidity)|float != input.target_humidity }}
         sequence:
           - service: climate.set_humidity
             target:
               entity_id: !input climate_entity
             data:
-              humidity: inputs.target_humidity
+              humidity: input.target_humidity
 
   # Mettre à jour la température cible du climatiseur.
   - service: climate.set_temperature
