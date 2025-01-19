@@ -76,10 +76,11 @@ blueprint:
       selector:
         select:
           options:
-            - label: "off"
-              value: "0"
-            - label: "on"
-              value: "1"
+            - "off"
+            - "vertical"
+            - "horizontal"
+            - label: "les deux"
+              value: "both"
 
     default_fan_speed:
       name: Vitesse du ventilateur par défaut
@@ -231,7 +232,7 @@ action:
             target:
               entity_id: !input climate_entity
             data:
-              swing_mode: "1"
+              swing_mode: "horizontal"
           - service: climate.set_fan_mode
             target:
               entity_id: !input climate_entity
@@ -253,7 +254,7 @@ action:
             target:
               entity_id: !input climate_entity
             data:
-              swing_mode: "1"
+              swing_mode: "horizontal"
           - service: climate.set_fan_mode
             target:
               entity_id: !input climate_entity
@@ -275,7 +276,7 @@ action:
             target:
               entity_id: !input climate_entity
             data:
-              swing_mode: "1"
+              swing_mode: "horizontal"
           - service: climate.set_fan_mode
             target:
               entity_id: !input climate_entity
@@ -297,7 +298,7 @@ action:
             target:
               entity_id: !input climate_entity
             data:
-              swing_mode: "1"
+              swing_mode: "horizontal"
           - service: climate.set_fan_mode
             target:
               entity_id: !input climate_entity
