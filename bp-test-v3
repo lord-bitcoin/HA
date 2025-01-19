@@ -78,12 +78,7 @@ blueprint:
           options:
             - label: "off" 
               value: "0"
-            - label: "vertical"
-              value: "1"
-            - label: "horizontal"
-              value: "2"
-            - label: "V&H"
-              value: "3"
+            - label: "on"
 
     default_fan_speed:
       name: Vitesse du ventilateur par défaut
@@ -236,7 +231,7 @@ action:
                     target:
                       entity_id: !input climate_entity
                     data:
-                      swing_mode: 3
+                      swing_mode: 1
 
       # Action 2 : Automatisation pour le printemps
       - conditions:
@@ -259,7 +254,7 @@ action:
                     target:
                       entity_id: !input climate_entity
                     data:
-                      swing_mode: 3
+                      swing_mode: 1
 
       # Action 3 : Automatisation pour l'été
       - conditions:
@@ -282,7 +277,7 @@ action:
                     target:
                       entity_id: !input climate_entity
                     data:
-                      swing_mode: 3
+                      swing_mode: 1
 
       # Action 4 : Automatisation pour l'automne
       - conditions:
@@ -305,7 +300,7 @@ action:
                     target:
                       entity_id: !input climate_entity
                     data:
-                      swing_mode: 3
+                      swing_mode: 1
 
   # Action pour ajuster l'humidité cible
   - choose:
