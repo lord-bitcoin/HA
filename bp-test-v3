@@ -236,7 +236,7 @@ action:
                     target:
                       entity_id: !input climate_entity
                     data:
-                    swing_mode: 3
+                      swing_mode: 3
 
       # Action 2 : Automatisation pour le printemps
       - conditions:
@@ -259,7 +259,7 @@ action:
                     target:
                       entity_id: !input climate_entity
                     data:
-                    swing_mode: 3
+                      swing_mode: 3
 
       # Action 3 : Automatisation pour l'été
       - conditions:
@@ -282,7 +282,7 @@ action:
                     target:
                       entity_id: !input climate_entity
                     data:
-                    swing_mode: 3
+                      swing_mode: 3
 
       # Action 4 : Automatisation pour l'automne
       - conditions:
@@ -305,7 +305,7 @@ action:
                     target:
                       entity_id: !input climate_entity
                     data:
-                    swing_mode: 3
+                      swing_mode: 3
 
   # Action pour ajuster l'humidité cible
   - choose:
