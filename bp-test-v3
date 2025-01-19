@@ -115,16 +115,15 @@ blueprint:
       name: Jours de fonctionnement
       description: Sélectionnez les jours pour lesquels cette automatisation est active.
       selector:
-        multi:
-          select:
-            options:
-              - lundi
-              - mardi
-              - mercredi
-              - jeudi
-              - vendredi
-              - samedi
-              - dimanche
+        select:
+          options:
+            - lundi
+            - mardi
+            - mercredi
+            - jeudi
+            - vendredi
+            - samedi
+            - dimanche
 
 mode: single
 
@@ -158,7 +157,7 @@ condition:
   # Condition 3 : Vérifier si le jour actuel est dans la sélection de jours configurés.
   - condition: template
     value_template: >
-      {% set today = now().strftime('%A')|lower %}
+      {% set today = now().strftime('%A').lower() %}
       {{ today in !input days }}
 
 action:
