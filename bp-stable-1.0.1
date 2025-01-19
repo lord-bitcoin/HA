@@ -202,6 +202,25 @@ condition:
         false
       {% endif %}
 
+  # Vérification des seuils de température avec tolérance
+  - condition: template
+    value_template: >
+      {% set indoor_temp = states(!input indoor_temp) | float %}
+      {% set outdoor_temp = states(!input outdoor_temp) | float %}
+      {% set target_temp = !input target_temp | float %}
+      {% set tolerance = !input temp_tolerance | float %}
+      {{ indoor_temp > (target_temp + tolerance) or indoor_temp < (target_temp - tolerance) or
+         outdoor_temp > (target_temp + tolerance) or outdoor_temp < (target_temp - tolerance) }}
+
+  # Vérification des seuils d'humidité avec tolérance
+  - condition: template
+    value_template: >
+      {% set indoor_humidity = states(!input indoor_humidity) | float %}
+      {% set target_humidity = !input target_humidity | float %}
+      {% set tolerance = !input temp_tolerance | float %}
+      {{ indoor_humidity < (target_humidity - tolerance) or
+         indoor_humidity > (target_humidity + tolerance) }}
+
 # Actions à exécuter en fonction des conditions
 action:
   # Variable pour déterminer la saison actuelle
@@ -307,4 +326,21 @@ action:
               entity_id: !input climate_entity
             data:
               fan_mode: "medium"
+
+        # Si l'humidité intérieure est hors des limites (trop basse ou trop haute)
+      - conditions:
+          - condition: template
+            value_template: >
+              {% set indoor_humidity = states(!input indoor_humidity) | float %}
+              {% set target_humidity = !input target_humidity | float %}
+              {% set tolerance = !input temp_tolerance | float %}
+              {{ indoor_humidity < (target_humidity - tolerance) or
+                 indoor_humidity > (target_humidity + tolerance) }}
+        sequence:
+          - service: climate.set_humidity
+            target:
+              entity_id: !input climate_entity
+            data:
+              humidity: !input target_humidity
+
  
