@@ -241,11 +241,6 @@ action:
               entity_id: !input climate_entity
             data:
               fan_mode: "medium"
-          - service: climate.set_humidity
-            target:
-              entity_id: !input climate_entity
-            data:
-              humidity: !input target_humidity
 
       # Automatisation pour le printemps
       - conditions:
@@ -268,11 +263,6 @@ action:
               entity_id: !input climate_entity
             data:
               fan_mode: "medium"
-          - service: climate.set_humidity
-            target:
-              entity_id: !input climate_entity
-            data:
-              humidity: !input target_humidity
 
       # Automatisation pour l'été
       - conditions:
@@ -295,11 +285,6 @@ action:
               entity_id: !input climate_entity
             data:
               fan_mode: "medium"
-          - service: climate.set_humidity
-            target:
-              entity_id: !input climate_entity
-            data:
-              humidity: !input target_humidity
 
       # Automatisation pour l'automne
       - conditions:
@@ -322,15 +307,4 @@ action:
               entity_id: !input climate_entity
             data:
               fan_mode: "medium"
-          - service: climate.set_humidity
-            target:
-              entity_id: !input climate_entity
-            data:
-              humidity: !input target_humidity
  
-  # Mise à jour de la température cible
-  - service: climate.set_temperature
-    target:
-      entity_id: !input climate_entity
-    data:
-      temperature: !input target_temp
