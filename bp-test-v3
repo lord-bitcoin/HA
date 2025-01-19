@@ -186,10 +186,16 @@ condition:
   - condition: template
     value_template: >
       {% set today = now().weekday() %}  # Lundi = 0, Dimanche = 6
-      {% if inputs.mode_jours == 'semaine' %}
-        {{ today in [0, 1, 2, 3, 4] }}
-      {% elif inputs.mode_jours == 'weekend' %}
-        {{ today in [5, 6] }}
+      {% if inputs is defined and 'mode_jours' in inputs %}
+        {% if inputs.mode_jours == 'semaine' %}
+          {{ today in [0, 1, 2, 3, 4] }}
+        {% elif inputs.mode_jours == 'weekend' %}
+          {{ today in [5, 6] }}
+        {% else %}
+          false
+        {% endif %}
+      {% else %}
+        false
       {% endif %}
 
 action:
