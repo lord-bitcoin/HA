@@ -232,7 +232,11 @@ action:
                       entity_id: !input climate_entity
                     data:
                       hvac_mode: "heat"
-                      swing_mode : "3"
+                  - service: climate.set_swing_mode
+                    target:
+                      entity_id: !input climate_entity
+                    data:
+                    swing_mode: 3
 
       # Action 2 : Automatisation pour le printemps
       - conditions:
@@ -251,7 +255,11 @@ action:
                       entity_id: !input climate_entity
                     data:
                       hvac_mode: "cool"
-                      swing_mode : "3"
+                  - service: climate.set_swing_mode
+                    target:
+                      entity_id: !input climate_entity
+                    data:
+                    swing_mode: 3
 
       # Action 3 : Automatisation pour l'été
       - conditions:
@@ -270,7 +278,11 @@ action:
                       entity_id: !input climate_entity
                     data:
                       hvac_mode: "cool"
-                      swing_mode : "3"
+                  - service: climate.set_swing_mode
+                    target:
+                      entity_id: !input climate_entity
+                    data:
+                    swing_mode: 3
 
       # Action 4 : Automatisation pour l'automne
       - conditions:
@@ -289,7 +301,11 @@ action:
                       entity_id: !input climate_entity
                     data:
                       hvac_mode: "heat"
-                      swing_mode : "3"
+                  - service: climate.set_swing_mode
+                    target:
+                      entity_id: !input climate_entity
+                    data:
+                    swing_mode: 3
 
   # Action pour ajuster l'humidité cible
   - choose:
@@ -311,9 +327,8 @@ action:
     data:
       temperature: !input target_temp
 
-  # Notification : Envoyer une alerte lorsque le mode du climatiseur change.
-  - service: notify.notify
-    data:
-      title: "Changement de mode de climatiseur"
-      message: >
-        Le climatiseur est passé en mode {{ state_attr('!input climate_entity', 'hvac_action') }} avec une température cible de {{ !input target_temp }} °C et une humidité cible de {{ !input target_humidity }}%.
+    - service: climate.set_swing_mode
+      target:
+        entity_id: climate.kitchen
+      data:
+        swing_mode: 1
