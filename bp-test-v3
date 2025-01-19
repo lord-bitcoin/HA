@@ -2,7 +2,7 @@ blueprint:
   name: Gestion automatisée des climatiseurs
   description: Automatise les climatiseurs selon la saison, les capteurs et les plages horaires.
   domain: automation
-  input:
+  inputs:
     climate_entity:
       name: Climatiseur
       description: Entité du climatiseur à automatiser.
