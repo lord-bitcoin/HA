@@ -232,7 +232,7 @@ action:
                       entity_id: !input climate_entity
                     data:
                       hvac_mode: "heat"
-                      swing_mode : 3
+                      swing_mode : "3"
 
       # Action 2 : Automatisation pour le printemps
       - conditions:
@@ -251,7 +251,7 @@ action:
                       entity_id: !input climate_entity
                     data:
                       hvac_mode: "cool"
-                      swing_mode : 3
+                      swing_mode : "3"
 
       # Action 3 : Automatisation pour l'été
       - conditions:
@@ -270,7 +270,7 @@ action:
                       entity_id: !input climate_entity
                     data:
                       hvac_mode: "cool"
-                      swing_mode : 3
+                      swing_mode : "3"
 
       # Action 4 : Automatisation pour l'automne
       - conditions:
@@ -289,7 +289,7 @@ action:
                       entity_id: !input climate_entity
                     data:
                       hvac_mode: "heat"
-                      swing_mode : 3
+                      swing_mode : "3"
 
   # Action pour ajuster l'humidité cible
   - choose:
@@ -303,25 +303,6 @@ action:
               entity_id: !input climate_entity
             data:
               humidity: inputs.target_humidity
-
-  # Action par défaut : Configurer le climatiseur avec les paramètres par défaut.
-  - service: climate.set_hvac_mode
-    target:
-      entity_id: !input climate_entity
-    data:
-      hvac_mode: !input default_mode
-
-  - service: climate.set_swing_mode
-    target:
-      entity_id: !input climate_entity
-    data:
-      swing_mode: !input default_swing_mode
-
-  - service: climate.set_fan_mode
-    target:
-      entity_id: !input climate_entity
-    data:
-      fan_mode: !input default_fan_speed
 
   # Mettre à jour la température cible du climatiseur.
   - service: climate.set_temperature
