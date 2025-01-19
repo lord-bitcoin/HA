@@ -75,11 +75,15 @@ blueprint:
       description: Mode de swing par défaut du climatiseur.
       selector:
         select:
-          number:
-            - 0
-            - 1
-            - 2
-            - 3
+          options:
+            - label: "off" 
+              value: "0"
+            - label: "vertical"
+              value: "1"
+            - label: "horizontal"
+              value: "2"
+            - label: "V&H"
+              value: "3"
 
     default_fan_speed:
       name: Vitesse du ventilateur par défaut
