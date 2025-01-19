@@ -69,6 +69,40 @@ blueprint:
             - heat
             - cool
 
+    default_swing_mode:
+      name: Mode oscillation par défaut
+      description: Mode de swing par défaut du climatiseur.
+      selector:
+        select:
+          options:
+            - auto
+            - both
+            - horizontal
+            - vertical
+            - off
+
+    default_fan_speed:
+      name: Vitesse du ventilateur par défaut
+      description: Vitesse du ventilateur par défaut.
+      selector:
+        select:
+          options:
+            - low
+            - medium
+            - high
+            - auto
+
+    manual_season:
+      name: Saison manuelle (optionnelle)
+      description: Sélectionner une saison manuellement si souhaité.
+      selector:
+        select:
+          options:
+            - hiver
+            - printemps
+            - été
+            - automne
+
     min_humidity:
       name: Humidité minimale
       description: Seuil minimal d'humidité pour activer le climatiseur.
@@ -162,15 +196,19 @@ condition:
 action:
   - variables:
       saison_actuelle: >-
-        {% set today = now().date() %}
-        {% if today >= today.replace(month=3, day=20) and today <= today.replace(month=6, day=20) %}
-          printemps
-        {% elif today >= today.replace(month=6, day=21) and today <= today.replace(month=9, day=22) %}
-          été
-        {% elif today >= today.replace(month=9, day=23) and today <= today.replace(month=12, day=20) %}
-          automne
+        {% if !input manual_season != "" %}
+          {{ !input manual_season }}
         {% else %}
-          hiver
+          {% set today = now().date() %}
+          {% if today >= today.replace(month=3, day=20) and today <= today.replace(month=6, day=20) %}
+            printemps
+          {% elif today >= today.replace(month=6, day=21) and today <= today.replace(month=9, day=22) %}
+            été
+          {% elif today >= today.replace(month=9, day=23) and today <= today.replace(month=12, day=20) %}
+            automne
+          {% else %}
+            hiver
+          {% endif %}
         {% endif %}
 
   - choose:
@@ -259,12 +297,24 @@ action:
             data:
               humidity: !input target_humidity
 
-  # Action par défaut : Utiliser le mode par défaut configuré par l'utilisateur.
+  # Action par défaut : Configurer le climatiseur avec les paramètres par défaut.
   - service: climate.set_hvac_mode
     target:
       entity_id: !input climate_entity
     data:
       hvac_mode: !input default_mode
+
+  - service: climate.set_swing_mode
+    target:
+      entity_id: !input climate_entity
+    data:
+      swing_mode: !input default_swing_mode
+
+  - service: climate.set_fan_mode
+    target:
+      entity_id: !input climate_entity
+    data:
+      fan_mode: !input default_fan_speed
 
   # Mettre à jour la température cible du climatiseur.
   - service: climate.set_temperature
