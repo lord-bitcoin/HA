@@ -326,9 +326,3 @@ action:
       entity_id: !input climate_entity
     data:
       temperature: !input target_temp
-
-    - service: climate.set_swing_mode
-      target:
-        entity_id: climate.kitchen
-      data:
-        swing_mode: 1
