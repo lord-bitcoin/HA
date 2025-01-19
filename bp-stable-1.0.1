@@ -202,16 +202,6 @@ condition:
         false
       {% endif %}
 
-  # Vérification des seuils de température avec tolérance
-  - condition: template
-    value_template: >
-      {% set indoor_temp = states(!input indoor_temp) | float %}
-      {% set outdoor_temp = states(!input outdoor_temp) | float %}
-      {% set target_temp = !input target_temp | float %}
-      {% set tolerance = !input temp_tolerance | float %}
-      {{ indoor_temp > (target_temp + tolerance) or indoor_temp < (target_temp - tolerance) or
-         outdoor_temp > (target_temp + tolerance) or outdoor_temp < (target_temp - tolerance) }}
-
   # Vérification des seuils d'humidité avec tolérance
   - condition: template
     value_template: >
