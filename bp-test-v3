@@ -69,6 +69,18 @@ blueprint:
             - heat
             - cool
 
+    default_swing_mode:
+      name: Mode oscillation par défaut
+      description: Mode de swing par défaut du climatiseur.
+      selector:
+        select:
+          options:
+            - auto
+            - both
+            - horizontal
+            - vertical
+            - off
+
     default_fan_speed:
       name: Vitesse du ventilateur par défaut
       description: Vitesse du ventilateur par défaut.
@@ -76,10 +88,9 @@ blueprint:
         select:
           options:
             - low
-            - medium low
             - medium
-            - medium high
             - high
+            - auto
 
     manual_season:
       name: Saison manuelle (optionnelle)
@@ -174,9 +185,9 @@ condition:
   - condition: template
     value_template: >
       {% set today = now().weekday() %}  # Lundi = 0, Dimanche = 6
-      {% if !input mode_jours == 'semaine' %}
+      {% if inputs.mode_jours == 'semaine' %}
         {{ today in [0, 1, 2, 3, 4] }}
-      {% elif !input mode_jours == 'weekend' %}
+      {% elif inputs.mode_jours == 'weekend' %}
         {{ today in [5, 6] }}
       {% else %}
         true
@@ -185,8 +196,8 @@ condition:
 action:
   - variables:
       saison_actuelle: >-
-        {% if !input manual_season != "" %}
-          {{ !input manual_season }}
+        {% if inputs.manual_season != "" %}
+          {{ inputs.manual_season }}
         {% else %}
           {% set today = now().date() %}
           {% if today >= today.replace(month=3, day=20) and today <= today.replace(month=6, day=20) %}
@@ -211,7 +222,7 @@ action:
               - conditions:
                   - condition: template
                     value_template: >
-                      {{ states('!input outdoor_temp')|float < (states('!input target_temp')|float - states('!input temp_tolerance')|float) }}
+                      {{ states(inputs.outdoor_temp)|float < (states(inputs.target_temp)|float - states(inputs.temp_tolerance)|float) }}
                 sequence:
                   - service: climate.set_hvac_mode
                     target:
@@ -229,7 +240,7 @@ action:
               - conditions:
                   - condition: template
                     value_template: >
-                      {{ states('!input indoor_temp')|float > (states('!input target_temp')|float + states('!input temp_tolerance')|float) }}
+                      {{ states(inputs.indoor_temp)|float > (states(inputs.target_temp)|float + states(inputs.temp_tolerance)|float) }}
                 sequence:
                   - service: climate.set_hvac_mode
                     target:
@@ -247,7 +258,7 @@ action:
               - conditions:
                   - condition: template
                     value_template: >
-                      {{ states('!input outdoor_temp')|float > (states('!input target_temp')|float + states('!input temp_tolerance')|float) }}
+                      {{ states(inputs.outdoor_temp)|float > (states(inputs.target_temp)|float + states(inputs.temp_tolerance)|float) }}
                 sequence:
                   - service: climate.set_hvac_mode
                     target:
@@ -265,7 +276,7 @@ action:
               - conditions:
                   - condition: template
                     value_template: >
-                      {{ states('!input outdoor_temp')|float < (states('!input target_temp')|float - states('!input temp_tolerance')|float) }}
+                      {{ states(inputs.outdoor_temp)|float < (states(inputs.target_temp)|float - states(inputs.temp_tolerance)|float) }}
                 sequence:
                   - service: climate.set_hvac_mode
                     target:
@@ -278,13 +289,13 @@ action:
       - conditions:
           - condition: template
             value_template: >
-              {{ states('!input indoor_humidity')|float != !input target_humidity }}
+              {{ states(inputs.indoor_humidity)|float != inputs.target_humidity }}
         sequence:
           - service: climate.set_humidity
             target:
               entity_id: !input climate_entity
             data:
-              humidity: !input target_humidity
+              humidity: inputs.target_humidity
 
   # Action par défaut : Configurer le climatiseur avec les paramètres par défaut.
   - service: climate.set_hvac_mode
@@ -292,6 +303,12 @@ action:
       entity_id: !input climate_entity
     data:
       hvac_mode: !input default_mode
+
+  - service: climate.set_swing_mode
+    target:
+      entity_id: !input climate_entity
+    data:
+      swing_mode: !input default_swing_mode
 
   - service: climate.set_fan_mode
     target:
