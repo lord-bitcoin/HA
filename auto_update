@@ -89,14 +89,6 @@ action:
       entity_id:
         - !input entity_1
         - !input entity_2
-        {% if input.entity_3 != "" %}- !input entity_3{% endif %}
-        {% if input.entity_4 != "" %}- !input entity_4{% endif %}
-        {% if input.entity_5 != "" %}- !input entity_5{% endif %}
-        {% if input.entity_6 != "" %}- !input entity_6{% endif %}
-        {% if input.entity_7 != "" %}- !input entity_7{% endif %}
-        {% if input.entity_8 != "" %}- !input entity_8{% endif %}
-        {% if input.entity_9 != "" %}- !input entity_9{% endif %}
-        {% if input.entity_10 != "" %}- !input entity_10{% endif %}
   - delay: !input delay
   {% if input.notification_message != "" %}
   - service: notify.notify
