@@ -241,6 +241,11 @@ action:
               entity_id: !input climate_entity
             data:
               fan_mode: "medium"
+          - service: climate.set_humidity
+            target:
+              entity_id: !input climate_entity
+            data:
+              humidity: !input target_humidity
 
       # Automatisation pour le printemps
       - conditions:
@@ -263,6 +268,11 @@ action:
               entity_id: !input climate_entity
             data:
               fan_mode: "medium"
+          - service: climate.set_humidity
+            target:
+              entity_id: !input climate_entity
+            data:
+              humidity: !input target_humidity
 
       # Automatisation pour l'été
       - conditions:
@@ -285,6 +295,11 @@ action:
               entity_id: !input climate_entity
             data:
               fan_mode: "medium"
+          - service: climate.set_humidity
+            target:
+              entity_id: !input climate_entity
+            data:
+              humidity: !input target_humidity
 
       # Automatisation pour l'automne
       - conditions:
@@ -307,21 +322,12 @@ action:
               entity_id: !input climate_entity
             data:
               fan_mode: "medium"
-
-  # Ajustement de l'humidité si elle diffère de la cible
-  - choose:
-      - conditions:
-          - condition: template
-            value_template: >
-              {{ states('!input indoor_humidity') | float < (states('!input min_humidity') | float) or 
-                 states('!input indoor_humidity') | float > (states('!input max_humidity') | float) }}
-        sequence:
           - service: climate.set_humidity
             target:
               entity_id: !input climate_entity
             data:
               humidity: !input target_humidity
-
+ 
   # Mise à jour de la température cible
   - service: climate.set_temperature
     target:
