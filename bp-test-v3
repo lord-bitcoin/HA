@@ -297,9 +297,6 @@ blueprint:
         temperature: !input target_temp
 
     - service: notify.notify
-      data:
+      data_template:
         title: "Changement de mode de climatiseur"
-        message: >-
-          Le climatiseur est passé en mode {{ state_attr(states('input_climate.entity'), 'hvac_action') }} 
-          avec une température cible de {{ states('input_number.target_temp') }} °C 
-          et une humidité cible de {{ states('input_number.target_humidity') }}%.
+        message: "Le climatiseur est passé en mode {{ state_attr(climate_entity, 'hvac_action') }} avec une température cible de {{ target_temp }} °C et une humidité cible de {{ target_humidity }}%"
