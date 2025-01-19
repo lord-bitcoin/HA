@@ -79,7 +79,6 @@ blueprint:
             - both
             - horizontal
             - vertical
-            - off
 
     default_fan_speed:
       name: Vitesse du ventilateur par défaut
