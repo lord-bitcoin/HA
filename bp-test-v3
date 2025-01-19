@@ -76,7 +76,9 @@ blueprint:
         select:
           options:
             - low
+            - medium low
             - medium
+            - medium high
             - high
 
     manual_season:
