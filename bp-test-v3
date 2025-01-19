@@ -76,7 +76,7 @@ blueprint:
       selector:
         select:
           options:
-            - label: "off" 
+            - label: "off"
               value: "0"
             - label: "on"
               value: "1"
@@ -152,11 +152,13 @@ blueprint:
           options:
             - semaine
             - weekend
+            - tous
 
 mode: single
 
+# Déclencheurs de l'automatisation
 trigger:
-  # Déclencheur 1 : Lorsque les capteurs de température ou d'humidité changent d'état.
+  # Déclencheur 1 : Changement d'état des capteurs
   - platform: state
     entity_id:
       - !input indoor_temp
@@ -164,12 +166,13 @@ trigger:
       - !input indoor_humidity
       - !input outdoor_humidity
 
-  # Déclencheur 2 : Vérification toutes les 5 minutes pour s'assurer que les conditions sont respectées.
+  # Déclencheur 2 : Vérification périodique toutes les minutes
   - platform: time_pattern
     minutes: "/1"
 
+# Conditions à vérifier avant d'exécuter l'action
 condition:
-  # Condition 2 : S'assurer que l'heure actuelle est comprise dans la plage horaire configurée par l'utilisateur.
+  # Condition 1 : Vérification de la plage horaire définie par l'utilisateur
   - condition: template
     value_template: >
       {% set now_time = states('sensor.time') %}
@@ -177,15 +180,17 @@ condition:
       {% set end_time = states('input_datetime.end_time') %}
       {{ start_time <= now_time <= end_time }}
 
-  # Condition 3 : Activer selon le jour de la semaine basé sur le mode choisi.
+  # Condition 2 : Vérification du jour en fonction du mode sélectionné
   - condition: template
     value_template: >
       {% set today = now().weekday() %}  # Lundi = 0, Dimanche = 6
-      {% if input is defined and 'mode_jours' in input %}
+      {% if 'mode_jours' in input %}
         {% if input.mode_jours == 'semaine' %}
           {{ today in [0, 1, 2, 3, 4] }}
         {% elif input.mode_jours == 'weekend' %}
           {{ today in [5, 6] }}
+        {% elif input.mode_jours == 'tous' %}
+          true
         {% else %}
           false
         {% endif %}
@@ -193,125 +198,126 @@ condition:
         false
       {% endif %}
 
+# Actions à exécuter en fonction des conditions
 action:
+  # Variable pour déterminer la saison actuelle
   - variables:
       saison_actuelle: >-
-          {% set today = now().date() %}
-          {% if today >= today.replace(month=3, day=20) and today <= today.replace(month=6, day=20) %}
-            printemps
-          {% elif today >= today.replace(month=6, day=21) and today <= today.replace(month=9, day=22) %}
-            été
-          {% elif today >= today.replace(month=9, day=23) and today <= today.replace(month=12, day=20) %}
-            automne
-          {% else %}
-            hiver
-          {% endif %}
+        {% set today = now().date() %}
+        {% if today >= today.replace(month=3, day=20) and today <= today.replace(month=6, day=20) %}
+          printemps
+        {% elif today >= today.replace(month=6, day=21) and today <= today.replace(month=9, day=22) %}
+          été
+        {% elif today >= today.replace(month=9, day=23) and today <= today.replace(month=12, day=20) %}
+          automne
+        {% else %}
+          hiver
+        {% endif %}
 
+  # Choix de l'action selon la saison actuelle
   - choose:
-      # Action 1 : Automatisation pour l'hiver
+      # Automatisation pour l'hiver
       - conditions:
           - condition: template
             value_template: >
               {{ saison_actuelle == 'hiver' }}
         sequence:
-          - choose:
-              - conditions:
-                sequence:
-                  - service: climate.set_hvac_mode
-                    target:
-                      entity_id: !input climate_entity
-                    data:
-                      hvac_mode: "heat"
-                  - service: climate.set_swing_mode
-                    target:
-                      entity_id: !input climate_entity
-                    data:
-                      swing_mode: "1"
-                  - service: climate.set_fan_speed
-                    target:
-                      fan_speed: medium
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input climate_entity
+            data:
+              hvac_mode: "heat"
+          - service: climate.set_swing_mode
+            target:
+              entity_id: !input climate_entity
+            data:
+              swing_mode: "1"
+          - service: climate.set_fan_mode
+            target:
+              entity_id: !input climate_entity
+            data:
+              fan_mode: "medium"
 
-      # Action 2 : Automatisation pour le printemps
+      # Automatisation pour le printemps
       - conditions:
           - condition: template
             value_template: >
               {{ saison_actuelle == 'printemps' }}
         sequence:
-          - choose:
-                sequence:
-                  - service: climate.set_hvac_mode
-                    target:
-                      entity_id: !input climate_entity
-                    data:
-                      hvac_mode: "cool"
-                  - service: climate.set_swing_mode
-                    target:
-                      entity_id: !input climate_entity
-                    data:
-                      swing_mode: "1"
-                  - service: climate.set_fan_speed
-                    target:
-                      fan_speed: medium
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input climate_entity
+            data:
+              hvac_mode: "cool"
+          - service: climate.set_swing_mode
+            target:
+              entity_id: !input climate_entity
+            data:
+              swing_mode: "1"
+          - service: climate.set_fan_mode
+            target:
+              entity_id: !input climate_entity
+            data:
+              fan_mode: "medium"
 
-      # Action 3 : Automatisation pour l'été
+      # Automatisation pour l'été
       - conditions:
           - condition: template
             value_template: >
               {{ saison_actuelle == 'été' }}
         sequence:
-          - choose:
-                sequence:
-                  - service: climate.set_hvac_mode
-                    target:
-                      entity_id: !input climate_entity
-                    data:
-                      hvac_mode: "cool"
-                  - service: climate.set_swing_mode
-                    target:
-                      entity_id: !input climate_entity
-                    data:
-                      swing_mode: "1"
-                  - service: climate.set_fan_speed
-                    target:
-                      fan_speed: medium
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input climate_entity
+            data:
+              hvac_mode: "cool"
+          - service: climate.set_swing_mode
+            target:
+              entity_id: !input climate_entity
+            data:
+              swing_mode: "1"
+          - service: climate.set_fan_mode
+            target:
+              entity_id: !input climate_entity
+            data:
+              fan_mode: "medium"
 
-      # Action 4 : Automatisation pour l'automne
+      # Automatisation pour l'automne
       - conditions:
           - condition: template
             value_template: >
               {{ saison_actuelle == 'automne' }}
         sequence:
-          - choose:
-              - conditions:
-                sequence:
-                  - service: climate.set_hvac_mode
-                    target:
-                      entity_id: !input climate_entity
-                    data:
-                      hvac_mode: "heat"
-                  - service: climate.set_swing_mode
-                    target:
-                      entity_id: !input climate_entity
-                    data:
-                      swing_mode: "1"
-                  - service: climate.set_fan_speed
-                    target:
-                      fan_speed: medium
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input climate_entity
+            data:
+              hvac_mode: "heat"
+          - service: climate.set_swing_mode
+            target:
+              entity_id: !input climate_entity
+            data:
+              swing_mode: "1"
+          - service: climate.set_fan_mode
+            target:
+              entity_id: !input climate_entity
+            data:
+              fan_mode: "medium"
 
-  # Action pour ajuster l'humidité cible
+  # Ajustement de l'humidité si elle diffère de la cible
   - choose:
       - conditions:
           - condition: template
             value_template: >
-              {{ states('input.indoor_humidity')|float != states('input.target_humidity')|float }}
+              {{ states('!input indoor_humidity') | float != !input target_humidity | float }}
         sequence:
           - service: climate.set_humidity
             target:
               entity_id: !input climate_entity
             data:
-              humidity: input.target_humidity
+              humidity: !input target_humidity
 
-  # Mettre à jour la température cible du climatiseur.
+  # Mise à jour de la température cible
   - service: climate.set_temperature
     target:
       entity_id: !input climate_entity
