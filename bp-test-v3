@@ -87,6 +87,15 @@ blueprint:
           max: 60
           step: 0.5
 
+    target_humidity:
+      name: Humidité cible
+      description: Niveau d'humidité cible à atteindre.
+      selector:
+        number:
+          min: 30
+          max: 70
+          step: 1
+
     start_time:
       name: Heure de début
       description: Heure de début pour activer l'automatisation.
@@ -237,6 +246,19 @@ action:
                     data:
                       hvac_mode: "heat"
 
+  # Action pour ajuster l'humidité cible
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: >
+              {{ states('!input indoor_humidity')|float != !input target_humidity }}
+        sequence:
+          - service: climate.set_humidity
+            target:
+              entity_id: !input climate_entity
+            data:
+              humidity: !input target_humidity
+
   # Action par défaut : Utiliser le mode par défaut configuré par l'utilisateur.
   - service: climate.set_hvac_mode
     target:
@@ -256,4 +278,4 @@ action:
     data:
       title: "Changement de mode de climatiseur"
       message: >
-        Le climatiseur est passé en mode {{ state_attr('!input climate_entity', 'hvac_action') }} avec une température cible de {{ !input target_temp }} °C.
+        Le climatiseur est passé en mode {{ state_attr('!input climate_entity', 'hvac_action') }} avec une température cible de {{ !input target_temp }} °C et une humidité cible de {{ !input target_humidity }}%.
