@@ -76,11 +76,11 @@ blueprint:
       selector:
         select:
           options:
-            - label: 
+            - label: "off"
               value: "off"
-            - label: 
+            - label: "vertical"
               value: "vertical"
-            - label: 
+            - label: "horizontal"
               value: "horizontal"
             - label: "les deux"
               value: "both"
@@ -235,7 +235,7 @@ action:
             target:
               entity_id: !input climate_entity
             data:
-              swing_mode: "horizontal"
+              swing_mode: "vertical"
           - service: climate.set_fan_mode
             target:
               entity_id: !input climate_entity
@@ -257,7 +257,7 @@ action:
             target:
               entity_id: !input climate_entity
             data:
-              swing_mode: "horizontal"
+              swing_mode: "vertical"
           - service: climate.set_fan_mode
             target:
               entity_id: !input climate_entity
@@ -279,7 +279,7 @@ action:
             target:
               entity_id: !input climate_entity
             data:
-              swing_mode: "horizontal"
+              swing_mode: "vertical"
           - service: climate.set_fan_mode
             target:
               entity_id: !input climate_entity
@@ -301,7 +301,7 @@ action:
             target:
               entity_id: !input climate_entity
             data:
-              swing_mode: "horizontal"
+              swing_mode: "vertical"
           - service: climate.set_fan_mode
             target:
               entity_id: !input climate_entity
@@ -313,7 +313,8 @@ action:
       - conditions:
           - condition: template
             value_template: >
-              {{ states(sensor.indoor_humidty) | float != input.target_humidity | float }}
+              {{ states('sensor.indoor_humidity') | float < !input min_humidity | float or
+                 states('sensor.indoor_humidity') | float > !input max_humidity | float }}
         sequence:
           - service: climate.set_humidity
             target:
