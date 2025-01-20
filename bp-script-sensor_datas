@@ -1,0 +1,29 @@
+alias: Récupérer les données des capteurs
+sequence:
+  - variables:
+      temperature_values: >
+        {% set sensors = states.sensor
+          | selectattr('attributes.device_class', 'equalto', 'temperature')
+          | map(attribute='entity_id')
+          | list %}
+        {% set selected_sensors = sensors[:20] %}
+        {% set values = selected_sensors | map('states') | list %}
+        {{ values }}
+
+      humidity_values: >
+        {% set sensors = states.sensor
+          | selectattr('attributes.device_class', 'equalto', 'humidity')
+          | map(attribute='entity_id')
+          | list %}
+        {% set selected_sensors = sensors[:20] %}
+        {% set values = selected_sensors | map('states') | list %}
+        {{ values }}
+
+  - service: persistent_notification.create
+    data:
+      title: "Données des capteurs sélectionnés"
+      message: >
+        Températures actuelles : {{ temperature_values | join(', ') }}
+        Humidités actuelles : {{ humidity_values | join(', ') }}
+
+mode: single
