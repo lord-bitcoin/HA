@@ -15,6 +15,16 @@ blueprint:
       selector:
         entity:
           domain: climate
+    min_temperature:
+      name: Température minimale tolérée
+      description: Seuil en dessous duquel le climatiseur se met en mode chauffage.
+      default: 18
+      selector:
+        number:
+          min: 10
+          max: 20
+          unit_of_measurement: "°C"
+          step: 0.5
     max_temperature:
       name: Température maximale tolérée
       description: Seuil au-dessus duquel le climatiseur se met en mode refroidissement.
@@ -23,16 +33,6 @@ blueprint:
         number:
           min: 20
           max: 30
-          unit_of_measurement: "°C"
-          step: 0.5
-    min_temperature:
-      name: Température minimale tolérée
-      description: Seuil en dessous duquel le climatiseur se met en mode chauffage.
-      default: 18
-      selector:
-        number:
-          min: 10
-          max: 25
           unit_of_measurement: "°C"
           step: 0.5
 
