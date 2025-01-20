@@ -39,10 +39,20 @@ blueprint:
 trigger:
   - platform: template
     value_template: >
-      {{ state_attr('input_text.cth_bureau', 'state') | regex_search('Température : (\d+(\.\d+)?) °C', ignorecase=True) | first | float > (input.max_temperature | float) }}
+      {% set temp = state_attr('input_text.cth_bureau', 'state') | regex_search('Température : (\d+(\.\d+)?) °C', ignorecase=True) | first %}
+      {% if temp %}
+        {{ temp | float > (input.max_temperature | float) }}
+      {% else %}
+        false
+      {% endif %}
   - platform: template
     value_template: >
-      {{ state_attr('input_text.cth_bureau', 'state') | regex_search('Température : (\d+(\.\d+)?) °C', ignorecase=True) | first | float < (input.min_temperature | float) }}
+      {% set temp = state_attr('input_text.cth_bureau', 'state') | regex_search('Température : (\d+(\.\d+)?) °C', ignorecase=True) | first %}
+      {% if temp %}
+        {{ temp | float < (input.min_temperature | float) }}
+      {% else %}
+        false
+      {% endif %}
 
 condition: []
 
@@ -51,7 +61,12 @@ action:
       - conditions:
           - condition: template
             value_template: >
-              {{ state_attr('input_text.cth_bureau', 'state') | regex_search('Température : (\d+(\.\d+)?) °C', ignorecase=True) | first | float > (input.max_temperature | float) }}
+              {% set temp = state_attr('input_text.cth_bureau', 'state') | regex_search('Température : (\d+(\.\d+)?) °C', ignorecase=True) | first %}
+              {% if temp %}
+                {{ temp | float > (input.max_temperature | float) }}
+              {% else %}
+                false
+              {% endif %}
         sequence:
           - service: climate.set_hvac_mode
             target:
@@ -66,7 +81,12 @@ action:
       - conditions:
           - condition: template
             value_template: >
-              {{ state_attr('input_text.cth_bureau', 'state') | regex_search('Température : (\d+(\.\d+)?) °C', ignorecase=True) | first | float < (input.min_temperature | float) }}
+              {% set temp = state_attr('input_text.cth_bureau', 'state') | regex_search('Température : (\d+(\.\d+)?) °C', ignorecase=True) | first %}
+              {% if temp %}
+                {{ temp | float < (input.max_temperature | float) }}
+              {% else %}
+                false
+              {% endif %}
         sequence:
           - service: climate.set_hvac_mode
             target:
