@@ -23,12 +23,10 @@ blueprint:
       selector:
         select:
           options:
-            - "Toues les saisons"
             - "Printemps"
             - "Été" 
             - "Automne"
             - "Hiver"
-          mode: list
     schedule_entity:
       name: Schedule
       selector:
@@ -67,11 +65,9 @@ condition:
       - condition: state
         entity_id: !input schedule_entity
         state: "on"
-      - condition: template
-        value_template: >
-          {% set current_season = states(!input current_season) %}
-          {% set selected_seasons = !input selected_season %}
-          {{ current_season in selected_seasons }}
+      - condition: state
+        entity_id: !input current_season
+        state: !input selected_season
 
 action:
   - choose:
