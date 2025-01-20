@@ -18,26 +18,28 @@ blueprint:
     min_temperature:
       name: Température minimale tolérée
       description: Seuil en dessous duquel le climatiseur se met en mode chauffage.
-      default: 18
+      default: 20
       selector:
         number:
           min: 10
-          max: 20
+          max: 30
           unit_of_measurement: "°C"
           step: 0.5
     max_temperature:
       name: Température maximale tolérée
       description: Seuil au-dessus duquel le climatiseur se met en mode refroidissement.
-      default: 25
+      default: 20
       selector:
         number:
-          min: 20
+          min: 10
           max: 30
           unit_of_measurement: "°C"
           step: 0.5
 trigger:
   - platform: state
     entity_id: !input temperature_entity
+  - platform: time_pattern
+    minutes: /15
 condition: []
 action:
   - choose:
