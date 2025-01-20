@@ -71,4 +71,8 @@ action:
               entity_id: !input climatiseur_entity
             data:
               temperature: !input min_temperature
+    default:
+      - service: climate.turn_off
+        target:
+          entity_id: !input climatiseur_entity
 mode: restart
