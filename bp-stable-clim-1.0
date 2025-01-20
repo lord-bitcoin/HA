@@ -62,7 +62,7 @@ action:
             target:
               entity_id: !input climatiseur_entity
             data:
-              temperature: 22
+              temperature: !input max_temperature
       - conditions:
           - condition: template
             value_template: >
@@ -77,5 +77,5 @@ action:
             target:
               entity_id: !input climatiseur_entity
             data:
-              temperature: 20
+              temperature: !input min_temperature
 mode: restart
