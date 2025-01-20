@@ -1,0 +1,81 @@
+blueprint:
+  name: Gestion automatique du climatiseur avec seuil de température
+  description: Un blueprint pour ajuster automatiquement un climatiseur en fonction de la température mesurée.
+  domain: automation
+  input:
+    temperature_entity:
+      name: Capteur de température
+      description: Entité fournissant la température actuelle sous forme de texte (par exemple, `input_text.cth_bureau`).
+      selector:
+        entity:
+          domain: input_text
+    climatiseur_entity:
+      name: Entité du climatiseur
+      description: Climatiseur à contrôler.
+      selector:
+        entity:
+          domain: climate
+    max_temperature:
+      name: Température maximale tolérée
+      description: Seuil au-dessus duquel le climatiseur se met en mode refroidissement.
+      default: 25
+      selector:
+        number:
+          min: 20
+          max: 30
+          unit_of_measurement: "°C"
+          step: 0.5
+    min_temperature:
+      name: Température minimale tolérée
+      description: Seuil en dessous duquel le climatiseur se met en mode chauffage.
+      default: 18
+      selector:
+        number:
+          min: 10
+          max: 25
+          unit_of_measurement: "°C"
+          step: 0.5
+
+trigger:
+  - platform: template
+    value_template: >
+      {{ state_attr('input_text.cth_bureau', 'state') | regex_search('Température : (\d+(\.\d+)?) °C', ignorecase=True) | first | float > (input.max_temperature | float) }}
+  - platform: template
+    value_template: >
+      {{ state_attr('input_text.cth_bureau', 'state') | regex_search('Température : (\d+(\.\d+)?) °C', ignorecase=True) | first | float < (input.min_temperature | float) }}
+
+condition: []
+
+action:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: >
+              {{ state_attr('input_text.cth_bureau', 'state') | regex_search('Température : (\d+(\.\d+)?) °C', ignorecase=True) | first | float > (input.max_temperature | float) }}
+        sequence:
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input climatiseur_entity
+            data:
+              hvac_mode: cool
+          - service: climate.set_temperature
+            target:
+              entity_id: !input climatiseur_entity
+            data:
+              temperature: 22
+      - conditions:
+          - condition: template
+            value_template: >
+              {{ state_attr('input_text.cth_bureau', 'state') | regex_search('Température : (\d+(\.\d+)?) °C', ignorecase=True) | first | float < (input.min_temperature | float) }}
+        sequence:
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input climatiseur_entity
+            data:
+              hvac_mode: heat
+          - service: climate.set_temperature
+            target:
+              entity_id: !input climatiseur_entity
+            data:
+              temperature: 20
+mode: restart
