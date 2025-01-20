@@ -19,15 +19,17 @@ blueprint:
         entity:
           domain: input_text
     selected_seasons:
-      name: saison choisis
+      name: Saisons choisies
+      description: Choisissez une ou plusieurs saisons
       selector:
-        object:
+        select:
           options:
             - "Toutes les saisons"
             - "Printemps"
             - "Été"
             - "Automne"
             - "Hiver"
+          mode: list
     schedule_entity:
       name: Schedule
       selector:
