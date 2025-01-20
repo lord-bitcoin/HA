@@ -1,22 +1,39 @@
-alias: Récupérer les données des capteurs
+blueprint:
+  name: Script pour récupérer les données d'humidité et de température
+  description: >
+    Ce script permet de récupérer les données actuelles d'humidité et de température 
+    des capteurs sélectionnés, avec un minimum d'un capteur obligatoire et jusqu'à 20 capteurs optionnels.
+  domain: script
+  input:
+    temperature_sensors:
+      name: Capteurs de température
+      description: Sélectionnez les capteurs de température à utiliser.
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+      multiple:
+        max: 20
+    humidity_sensors:
+      name: Capteurs d'humidité
+      description: Sélectionnez les capteurs d'humidité à utiliser.
+      selector:
+        entity:
+          domain: sensor
+          device_class: humidity
+      multiple:
+        max: 20
+
 sequence:
   - variables:
-      temperature_values: >
-        {% set sensors = states.sensor
-          | selectattr('attributes.device_class', 'equalto', 'temperature')
-          | map(attribute='entity_id')
-          | list %}
-        {% set selected_sensors = sensors[:20] %}
-        {% set values = selected_sensors | map('states') | list %}
+      temperature_values: |
+        {% set sensors = !input temperature_sensors %}
+        {% set values = sensors | map('states') | list %}
         {{ values }}
 
-      humidity_values: >
-        {% set sensors = states.sensor
-          | selectattr('attributes.device_class', 'equalto', 'humidity')
-          | map(attribute='entity_id')
-          | list %}
-        {% set selected_sensors = sensors[:20] %}
-        {% set values = selected_sensors | map('states') | list %}
+      humidity_values: |
+        {% set sensors = !input humidity_sensors %}
+        {% set values = sensors | map('states') | list %}
         {{ values }}
 
   - service: persistent_notification.create
