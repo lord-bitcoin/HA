@@ -35,23 +35,16 @@ blueprint:
           max: 30
           unit_of_measurement: "°C"
           step: 0.5
-
 trigger:
-  - platform: template
-    value_template: >
-      {{ states(input_number.cth_bureau_n) | float > (input.max_temperature | float) }}
-  - platform: template
-    value_template: >
-      {{ states(input_number.cth_bureau_n) | float < (input.min_temperature | float) }}
-
+  - platform: state
+    entity_id: !input temperature_entity
 condition: []
-
 action:
   - choose:
       - conditions:
-          - condition: template
-            value_template: >
-              {{ states(input_number.cth_bureau_n) | float > (input.max_temperature | float) }}
+          - condition: numeric_state
+            entity_id: !input temperature_entity
+            above: !input max_temperature
         sequence:
           - service: climate.set_hvac_mode
             target:
@@ -64,9 +57,9 @@ action:
             data:
               temperature: !input max_temperature
       - conditions:
-          - condition: template
-            value_template: >
-              {{ states(input_number.cth_bureau_n) | float < (input.min_temperature | float) }}
+          - condition: numeric_state
+            entity_id: !input temperature_entity
+            below: !input min_temperature
         sequence:
           - service: climate.set_hvac_mode
             target:
