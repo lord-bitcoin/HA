@@ -18,15 +18,18 @@ blueprint:
       selector:
         entity:
           domain: input_text
-    selected_season:
-      name: Saison pour cette automation
+    selected_seasons:
+      name: Saisons
+      description: Choisissez les saisons
       selector:
-        select:
+        object:
           options:
+            - "Toutes les saisons"
+            - "Printemps"
             - "Été"
-            - "Hiver"
-            - "Printemps" 
             - "Automne"
+            - "Hiver"
+    initial: "Toutes les saisons"
     schedule_entity:
       name: Schedule
       selector:
