@@ -27,6 +27,7 @@ blueprint:
             - "Hiver"
             - "Printemps" 
             - "Automne"
+          multiple: true
     schedule_entity:
       name: Schedule
       selector:
@@ -38,7 +39,7 @@ blueprint:
       selector:
         number:
           min: 10
-          max: 20
+          max: 30
           unit_of_measurement: "°C"
           step: 0.5
     max_temperature:
@@ -46,7 +47,7 @@ blueprint:
       default: 25
       selector:
         number:
-          min: 20
+          min: 10
           max: 30
           unit_of_measurement: "°C"
           step: 0.5
