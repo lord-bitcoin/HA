@@ -1,0 +1,103 @@
+blueprint:
+  name: Automatisation avec vérification horaire et saison
+  description: >
+    Ce blueprint déclenche une automatisation uniquement si les conditions de
+    plage horaire (semaine/jour, semaine/nuit, weekend/jour, weekend/nuit) et
+    de saison définie dans `saisons.yaml` sont respectées.
+  domain: automation
+  input:
+    trigger_entity:
+      name: Entité déclencheur
+      description: Entité à surveiller pour déclencher l'automatisation.
+      selector:
+        entity:
+    action:
+      name: Action
+      description: Action à exécuter si les conditions sont remplies.
+      selector:
+        action:
+    saison_entity:
+      name: Entité pour la saison
+      description: Entité définie dans `saisons.yaml` pour déterminer la saison actuelle.
+      selector:
+        entity:
+    semaine_jour:
+      name: Schedule semaine jour
+      description: Entité schedule pour les jours de semaine (jour).
+      selector:
+        entity:
+    semaine_nuit:
+      name: Schedule semaine nuit
+      description: Entité schedule pour les jours de semaine (nuit).
+      selector:
+        entity:
+    weekend_jour:
+      name: Schedule weekend jour
+      description: Entité schedule pour les jours de weekend (jour).
+      selector:
+        entity:
+    weekend_nuit:
+      name: Schedule weekend nuit
+      description: Entité schedule pour les jours de weekend (nuit).
+      selector:
+        entity:
+
+trigger:
+  - platform: state
+    entity_id: !input trigger_entity
+
+variables:
+  current_time: "{{ now().time() }}"
+  current_day: "{{ now().weekday() }}"
+  current_season: "{{ states(!input saison_entity) }}"
+
+condition:
+  - condition: or
+    conditions:
+      # Semaine - Jour
+      - condition: and
+        conditions:
+          - condition: template
+            value_template: "{{ current_day >= 0 and current_day <= 4 }}"
+          - condition: state
+            entity_id: !input semaine_jour
+            state: "on"
+
+      # Semaine - Nuit
+      - condition: and
+        conditions:
+          - condition: template
+            value_template: "{{ current_day >= 0 and current_day <= 4 }}"
+          - condition: state
+            entity_id: !input semaine_nuit
+            state: "on"
+
+      # Weekend - Jour
+      - condition: and
+        conditions:
+          - condition: template
+            value_template: "{{ current_day >= 5 and current_day <= 6 }}"
+          - condition: state
+            entity_id: !input weekend_jour
+            state: "on"
+
+      # Weekend - Nuit
+      - condition: and
+        conditions:
+          - condition: template
+            value_template: "{{ current_day >= 5 and current_day <= 6 }}"
+          - condition: state
+            entity_id: !input weekend_nuit
+            state: "on"
+
+  # Vérification de la saison
+  - condition: state
+    entity_id: !input saison_entity
+    state: "{{ current_season }}"
+
+action:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ true }}"
+        sequence: !input action
