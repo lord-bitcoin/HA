@@ -57,7 +57,7 @@ action:
             target:
               entity_id: !input climatiseur_entity
             data:
-              hvac_mode: cool
+              hvac_mode: auto
           - service: climate.set_temperature
             target:
               entity_id: !input climatiseur_entity
@@ -72,7 +72,7 @@ action:
             target:
               entity_id: !input climatiseur_entity
             data:
-              hvac_mode: heat
+              hvac_mode: auto
           - service: climate.set_temperature
             target:
               entity_id: !input climatiseur_entity
