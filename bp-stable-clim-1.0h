@@ -102,7 +102,7 @@ action:
             entity_id: !input temperature_entity
             below: !input min_temperature
         sequence:
-          # Activer le mode chauffage et régler la température cible
+          # Activer le mode chauffage automatique
           - service: climate.set_hvac_mode
             target:
               entity_id: !input climatiseur_entity
@@ -113,6 +113,11 @@ action:
               entity_id: !input climatiseur_entity
             data:
               temperature: !input temperature_cible
+          - service: climate.set_fan_mode
+            target:
+              entity_id: !input climatiseur_entity
+            data:
+              fan_mode: auto
 
       # Condition : Si la température cible est atteinte (dans les tolérances)
       - conditions:
@@ -126,15 +131,14 @@ action:
               - conditions:
                   - condition: numeric_state
                     entity_id: !input temperature_entity
-                    above: !input min_temperature
-                    below: !input max_temperature
+                    between: [!input min_temperature, !input max_temperature]
                 sequence:
                   # Si la température est toujours dans les tolérances, mode auto
                   - service: climate.set_hvac_mode
                     target:
                       entity_id: !input climatiseur_entity
                     data:
-                      hvac_mode: heat
+                      hvac_mode: auto
                   - service: climate.set_fan_mode
                     target:
                       entity_id: !input climatiseur_entity
