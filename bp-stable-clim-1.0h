@@ -1,3 +1,83 @@
+blueprint:
+  name: Gestion automatique du climatiseur avec seuil de température
+  description: Un blueprint pour ajuster automatiquement un climatiseur en fonction de la température mesurée.
+  domain: automation
+  input:
+    temperature_entity:
+      name: Capteur de température 
+      selector:
+        entity:
+          domain: input_number
+    climatiseur_entity:
+      name: Entité du climatiseur
+      selector:
+        entity:
+          domain: climate
+    current_season:
+      name: Input text de la saison actuelle
+      selector:
+        entity:
+          domain: input_text
+    selected_season:
+      name: saison choisie
+      selector:
+        select:
+          options:
+            - "Toutes les saisons"
+            - "Printemps"
+            - "Été" 
+            - "Automne"
+            - "Hiver"
+    schedule_entity:
+      name: Schedule
+      selector:
+        entity:
+          domain: schedule
+    min_temperature:
+      name: Température minimale tolérée
+      default: 18
+      selector:
+        number:
+          min: 10
+          max: 30
+          unit_of_measurement: "°C"
+          step: 0.5
+    max_temperature:
+      name: Température maximale tolérée 
+      default: 25
+      selector:
+        number:
+          min: 10
+          max: 30
+          unit_of_measurement: "°C"
+          step: 0.5
+    seuil_de_tolerance: 
+      name: Seuil de tolérance
+      selector:
+        number:
+          min: 0
+          max: 2
+          unit_of_measurement: "°C"
+          step: 0.1
+          
+trigger:
+  - platform: state
+    entity_id: !input temperature_entity
+  - platform: time_pattern
+    minutes: /15
+  - platform: state 
+    entity_id: !input schedule_entity
+
+condition:
+  - alias: "Vérification du schedule et de la saison"
+    and:
+      - condition: state
+        entity_id: !input schedule_entity
+        state: "on"
+      - condition: state
+        entity_id: !input current_season
+        state: !input selected_season
+
 action:
   - choose:
       # Condition : Si la température actuelle est supérieure à la tolérance
