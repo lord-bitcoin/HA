@@ -1,4 +1,4 @@
-blueprint:
+rblueprint:
   name: Gestion automatique du climatiseur avec seuil de température
   description: Un blueprint pour ajuster automatiquement un climatiseur en fonction de la température mesurée.
   domain: automation
@@ -42,12 +42,12 @@ blueprint:
       name: Température minimale tolérée
       selector:
         entity:
-          domain: input_number
+          domain: sensor
     max_temperature:
       name: Température maximale tolérée 
       selector:
         entity:
-          domain: input_number
+          domain: sensor
 
 trigger:
   - platform: state
