@@ -126,14 +126,15 @@ action:
               - conditions:
                   - condition: numeric_state
                     entity_id: !input temperature_entity
-                    between: [!input min_temperature, !input max_temperature]
+                    above: !input min_temperature
+                    below: !input max_temperature
                 sequence:
                   # Si la température est toujours dans les tolérances, mode auto
                   - service: climate.set_hvac_mode
                     target:
                       entity_id: !input climatiseur_entity
                     data:
-                      hvac_mode: auto
+                      hvac_mode: heat
                   - service: climate.set_fan_mode
                     target:
                       entity_id: !input climatiseur_entity
