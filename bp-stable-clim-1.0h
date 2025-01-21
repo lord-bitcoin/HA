@@ -35,14 +35,27 @@ blueprint:
           domain: schedule
     temperature_cible:
       name: Température cible
-      selector:
-        entity:
+      selector: 
+        entity: 
           domain: input_number
-    seuil_de_tolerance: 
-      name: Seuil de tolérance
+    min_temperature:
+      name: Température minimale tolérée
+      default: 18
       selector:
-        entity:
-          domain: input_number
+        number:
+          min: 10
+          max: 30
+          unit_of_measurement: "°C"
+          step: 0.5
+    max_temperature:
+      name: Température maximale tolérée 
+      default: 25
+      selector:
+        number:
+          min: 10
+          max: 30
+          unit_of_measurement: "°C"
+          step: 0.5
           
 trigger:
   - platform: state
@@ -64,32 +77,40 @@ condition:
 
 action:
   - choose:
-      # Condition : Si la température actuelle est supérieure au seuil supérieur
+      # Condition : Si la température actuelle est supérieure à la tolérance
       - conditions:
-          - condition: template
-            value_template: >
-              {{ states(!input temperature_entity) | float > (!input temperature_cible | float + !input seuil_de_tolerance | float) }}
+          - condition: numeric_state
+            entity_id: !input temperature_entity
+            above: !input max_temperature
         sequence:
-          # Activer le mode refroidissement
+          # Activer le mode ventilation (fan only) pour 15 minutes
           - service: climate.set_hvac_mode
             target:
               entity_id: !input climatiseur_entity
             data:
-              hvac_mode: cool
-          - service: climate.set_temperature
-            target:
-              entity_id: !input climatiseur_entity
-            data:
-              temperature: >
-                {{ !input temperature_cible | float + !input seuil_de_tolerance | float }}
-
-      # Condition : Si la température actuelle est inférieure au seuil inférieur
+              hvac_mode: fan only
+          - delay: "00:15:00"  # Attendre 15 minutes
+          # Vérifier si la température est toujours au-dessus du seuil
+          - choose:
       - conditions:
-          - condition: template
-            value_template: >
-              {{ states(!input temperature_entity) | float < (!input temperature_cible | float - !input seuil_de_tolerance | float) }}
+          - condition: numeric_state
+            entity_id: !input temperature_entity
+            above: !input max_temperature
+                sequence:
+                  # Si la température est toujours au-dessus du seuil, éteindre le climatiseur
+                  - service: climate.set_hvac_mode
+                    target:
+                      entity_id: !input climatiseur_entity
+                    data:
+                      hvac_mode: off
+
+      # Condition : Si la température actuelle est inférieure à la tolérance
+      - conditions:
+          - condition: numeric_state
+            entity_id: !input temperature_entity
+            above: !input min_temperature
         sequence:
-          # Activer le mode chauffage
+          # Activer le mode chauffage et régler la température cible
           - service: climate.set_hvac_mode
             target:
               entity_id: !input climatiseur_entity
@@ -99,27 +120,30 @@ action:
             target:
               entity_id: !input climatiseur_entity
             data:
-              temperature: >
-                {{ !input temperature_cible | float - !input seuil_de_tolerance | float }}
+              temperature: !input temperature_cible
 
-      # Condition : Si la température est dans la plage de tolérance
+      # Condition : Si la température cible est atteinte (dans les tolérances)
       - conditions:
-          - condition: template
-            value_template: >
-              {{ (!input temperature_cible | float - !input seuil_de_tolerance | float) <= states(!input temperature_entity) | float <= (!input temperature_cible | float + !input seuil_de_tolerance | float) }}
+          - condition: numeric_state
+            entity_id: !input temperature_entity
+            above: !input min_temperature
         sequence:
-          # Mettre le climatiseur en mode auto
-          - service: climate.set_hvac_mode
-            target:
-              entity_id: !input climatiseur_entity
-            data:
-              hvac_mode: auto
-          - service: climate.set_fan_mode
-            target:
-              entity_id: !input climatiseur_entity
-            data:
-              fan_mode: auto
-
-
-
+          - delay: "00:15:00"
+          # Vérifier si la température est toujours dans les tolérances
+      - conditions:
+          - condition: numeric_state
+            entity_id: !input temperature_entity
+            above: !input min_temperature
+                sequence:
+                  # Si la température est toujours dans les tolérances, mode auto
+                  - service: climate.set_hvac_mode
+                    target:
+                      entity_id: !input climatiseur_entity
+                    data:
+                      hvac_mode: heat
+                  - service: climate.set_fan_mode
+                    target:
+                      entity_id: !input climatiseur_entity
+                    data:
+                      fan_mode: auto
 mode: restart
