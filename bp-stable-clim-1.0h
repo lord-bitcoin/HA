@@ -123,7 +123,8 @@ action:
       - conditions:
           - condition: numeric_state
             entity_id: !input temperature_entity
-            between: [!input min_temperature, !input max_temperature]
+            below: !input max_temperature
+            above: !input min_temperature
         sequence:
           - delay: "00:15:00"
           # Vérifier si la température est toujours dans les tolérances
@@ -131,7 +132,8 @@ action:
               - conditions:
                   - condition: numeric_state
                     entity_id: !input temperature_entity
-                    between: [!input min_temperature, !input max_temperature]
+                    below: !input max_temperature
+                    above: !input min_temperature
                 sequence:
                   # Si la température est toujours dans les tolérances, mode auto
                   - service: climate.set_hvac_mode
