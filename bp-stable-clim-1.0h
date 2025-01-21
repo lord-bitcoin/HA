@@ -19,7 +19,7 @@ blueprint:
         entity:
           domain: input_text
     selected_season:
-      name: saison choisie
+      name: Saison choisie
       selector:
         select:
           options:
@@ -48,24 +48,28 @@ blueprint:
       selector:
         entity:
           domain: input_number
-          
+
 trigger:
   - platform: state
     entity_id: !input temperature_entity
   - platform: time_pattern
-    minutes: /15
+    minutes: "/15"
   - platform: state 
     entity_id: !input schedule_entity
 
 condition:
   - alias: "Vérification du schedule et de la saison"
-    and:
+    conditions:
       - condition: state
         entity_id: !input schedule_entity
         state: "on"
-      - condition: state
-        entity_id: !input current_season
-        state: !input selected_season
+      - condition: or
+        conditions:
+          - condition: template
+            value_template: "{{ !input selected_season == 'Toutes les saisons' }}"
+          - condition: state
+            entity_id: !input current_season
+            state: !input selected_season
 
 action:
   - choose:
@@ -75,67 +79,53 @@ action:
             entity_id: !input temperature_entity
             above: !input max_temperature
         sequence:
-          # Activer le mode ventilation (fan only) pour 15 minutes
           - service: climate.set_hvac_mode
             target:
               entity_id: !input climatiseur_entity
             data:
-              hvac_mode: fan only
-          - delay: "00:15:00"  # Attendre 15 minutes
-          # Vérifier si la température est toujours au-dessus du seuil
-          - choose:
-      - conditions:
+              hvac_mode: "fan_only"
+          - delay: "00:15:00"
           - condition: numeric_state
             entity_id: !input temperature_entity
             above: !input max_temperature
-                sequence:
-                  # Si la température est toujours au-dessus du seuil, éteindre le climatiseur
-                  - service: climate.set_hvac_mode
-                    target:
-                      entity_id: !input climatiseur_entity
-                    data:
-                      hvac_mode: off
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input climatiseur_entity
+            data:
+              hvac_mode: "off"
 
       # Condition : Si la température actuelle est inférieure à la tolérance
       - conditions:
           - condition: numeric_state
             entity_id: !input temperature_entity
-            above: !input min_temperature
+            below: !input min_temperature
         sequence:
-          # Activer le mode chauffage et régler la température cible
           - service: climate.set_hvac_mode
             target:
               entity_id: !input climatiseur_entity
             data:
-              hvac_mode: heat
+              hvac_mode: "heat"
           - service: climate.set_temperature
             target:
               entity_id: !input climatiseur_entity
             data:
-              temperature: !input temperature_cible
+              temperature: "{{ states(!input temperature_cible) }}"
 
-      # Condition : Si la température cible est atteinte (dans les tolérances)
+      # Condition : Si la température est dans les tolérances
       - conditions:
           - condition: numeric_state
             entity_id: !input temperature_entity
             above: !input min_temperature
+            below: !input max_temperature
         sequence:
-          - delay: "00:15:00"
-          # Vérifier si la température est toujours dans les tolérances
-      - conditions:
-          - condition: numeric_state
-            entity_id: !input temperature_entity
-            above: !input min_temperature
-                sequence:
-                  # Si la température est toujours dans les tolérances, mode auto
-                  - service: climate.set_hvac_mode
-                    target:
-                      entity_id: !input climatiseur_entity
-                    data:
-                      hvac_mode: heat
-                  - service: climate.set_fan_mode
-                    target:
-                      entity_id: !input climatiseur_entity
-                    data:
-                      fan_mode: auto
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input climatiseur_entity
+            data:
+              hvac_mode: "heat"
+          - service: climate.set_fan_mode
+            target:
+              entity_id: !input climatiseur_entity
+            data:
+              fan_mode: "auto"
 mode: restart
