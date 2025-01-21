@@ -66,10 +66,9 @@ action:
   - choose:
       # Condition : Si la température actuelle est supérieure au seuil supérieur
       - conditions:
-          - condition: numeric_state
-            entity_id: !input temperature_entity
-            above: >
-              {{ !input temperature_cible | float + !input seuil_de_tolerance | float }}
+          - condition: template
+            value_template: >
+              {{ states(!input temperature_entity) | float > (!input temperature_cible | float + !input seuil_de_tolerance | float) }}
         sequence:
           # Activer le mode refroidissement
           - service: climate.set_hvac_mode
@@ -86,10 +85,9 @@ action:
 
       # Condition : Si la température actuelle est inférieure au seuil inférieur
       - conditions:
-          - condition: numeric_state
-            entity_id: !input temperature_entity
-            below: >
-              {{ !input temperature_cible | float - !input seuil_de_tolerance | float }}
+          - condition: template
+            value_template: >
+              {{ states(!input temperature_entity) | float < (!input temperature_cible | float - !input seuil_de_tolerance | float) }}
         sequence:
           # Activer le mode chauffage
           - service: climate.set_hvac_mode
@@ -106,12 +104,9 @@ action:
 
       # Condition : Si la température est dans la plage de tolérance
       - conditions:
-          - condition: numeric_state
-            entity_id: !input temperature_entity
-            above: >
-              {{ !input temperature_cible | float - !input seuil_de_tolerance | float }}
-            below: >
-              {{ !input temperature_cible | float + !input seuil_de_tolerance | float }}
+          - condition: template
+            value_template: >
+              {{ (!input temperature_cible | float - !input seuil_de_tolerance | float) <= states(!input temperature_entity) | float <= (!input temperature_cible | float + !input seuil_de_tolerance | float) }}
         sequence:
           # Mettre le climatiseur en mode auto
           - service: climate.set_hvac_mode
@@ -124,6 +119,7 @@ action:
               entity_id: !input climatiseur_entity
             data:
               fan_mode: auto
+
 
 
 mode: restart
