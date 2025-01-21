@@ -68,21 +68,23 @@ action:
       - conditions:
           - condition: template
             value_template: >
-              {{ states(input_number.temperature_entity) | float > (input_number.temperature_cible) | float + (input_number.seuil_de_tolerance) | float) }}
+              {{ states('input_number.temperature_entity') | float > 
+                 (states('input_number.temperature_cible') | float + states('input_number.seuil_de_tolerance') | float) }}
         sequence:
           # Activer le mode ventilation (fan only) pour 15 minutes
           - service: climate.set_hvac_mode
             target:
               entity_id: !input climatiseur_entity
             data:
-              hvac_mode: fan only
+              hvac_mode: fan_only
           - delay: "00:15:00"  # Attendre 15 minutes
           # Vérifier si la température est toujours au-dessus du seuil
           - choose:
               - conditions:
                   - condition: template
                     value_template: >
-                      {{ states(input_number.temperature_entity) | float > (input_number.temperature_cible) | float + (input_number.seuil_de_tolerance) | float) }}
+                      {{ states('input_number.temperature_entity') | float > 
+                         (states('input_number.temperature_cible') | float + states('input_number.seuil_de_tolerance') | float) }}
                 sequence:
                   # Si la température est toujours au-dessus du seuil, éteindre le climatiseur
                   - service: climate.set_hvac_mode
@@ -95,7 +97,8 @@ action:
       - conditions:
           - condition: template
             value_template: >
-              {{ states(input_number.temperature_entity) | float < (input_number.temperature_cible) | float - (input_number.seuil_de_tolerance) | float) }}
+              {{ states('input_number.temperature_entity') | float < 
+                 (states('input_number.temperature_cible') | float - states('input_number.seuil_de_tolerance') | float) }}
         sequence:
           # Activer le mode chauffage et régler la température cible
           - service: climate.set_hvac_mode
@@ -113,7 +116,9 @@ action:
       - conditions:
           - condition: template
             value_template: >
-              {{ (input_number.temperature_cible) | float - (input_number.seuil_de_tolerance) | float) <= states(input_number.temperature_entity) | float <= (input_number.temperature_cible) | float + (input_number.seuil_de_tolerance) | float) }}
+              {{ (states('input_number.temperature_cible') | float - states('input_number.seuil_de_tolerance') | float) <= 
+                 states('input_number.temperature_entity') | float <= 
+                 (states('input_number.temperature_cible') | float + states('input_number.seuil_de_tolerance') | float) }}
         sequence:
           - delay: "00:15:00"
           # Vérifier si la température est toujours dans les tolérances
@@ -121,7 +126,9 @@ action:
               - conditions:
                   - condition: template
                     value_template: >
-                      {{ states(input_number.temperature_entity) | float >= (!input (input_number.temperature_cible) | float - (input_number.seuil_de_tolerance) | float) }}
+                      {{ (states('input_number.temperature_cible') | float - states('input_number.seuil_de_tolerance') | float) <= 
+                         states('input_number.temperature_entity') | float <= 
+                         (states('input_number.temperature_cible') | float + states('input_number.seuil_de_tolerance') | float) }}
                 sequence:
                   # Si la température est toujours dans les tolérances, mode auto
                   - service: climate.set_hvac_mode
@@ -134,4 +141,5 @@ action:
                       entity_id: !input climatiseur_entity
                     data:
                       fan_mode: auto
+
 mode: restart
