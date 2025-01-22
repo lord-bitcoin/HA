@@ -81,6 +81,12 @@ action:
               entity_id: !input climatiseur_entity
             data:
               hvac_mode: fan_only
+          # Configurer le mode de balancement horizontal
+          - service: climate.set_swing_mode
+            target:
+              entity_id: !input climatiseur_entity
+            data:
+              swing_mode: "horizontal"
           - delay: "00:15:00"  # Attendre 15 minutes
           # Vérifier si la température est toujours au-dessus du seuil
           - choose:
@@ -94,7 +100,8 @@ action:
                     target:
                       entity_id: !input climatiseur_entity
                     data:
-                      hvac_mode: "off"
+                      hvac_mode: "off"  
+  
 
       # Condition : Si la température actuelle est inférieure à la tolérance
       - conditions:
@@ -118,6 +125,11 @@ action:
               entity_id: !input climatiseur_entity
             data:
               fan_mode: auto
+          - service: climate.set_swing_mode
+            target:
+              entity_id: !input climatiseur_entity
+            data:
+              swing_mode: "horizontal"
 
       # Condition : Si la température cible est atteinte (dans les tolérances)
       - conditions:
@@ -146,5 +158,10 @@ action:
                       entity_id: !input climatiseur_entity
                     data:
                       fan_mode: auto
+                  - service: climate.set_swing_mode
+                    target:
+                      entity_id: !input climatiseur_entity
+                    data:
+                      swing_mode: "horizontal"
 
 mode: restart
